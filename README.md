@@ -1,2 +1,2 @@
 # R4A_Robot
-Generic robot infrastructure support
+Robots-For-All infrastructure and common support routines for robots.
