@@ -100,6 +100,6 @@ String * r4aReadLine(bool echo, String * buffer, WiFiClient * port);
 //   str2: Address of a zero terminated string of characters
 // Outputs:
 //   Returns the delta value of the last comparison (str1[x] - str2[x])
-int r4aEsp32Stricmp(const char *str1, const char *str2);
+int r4aStricmp(const char *str1, const char *str2);
 
 #endif  // __R4A_COMMON_H__
