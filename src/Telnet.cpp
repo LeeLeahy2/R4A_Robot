@@ -24,8 +24,7 @@ void R4A_TELNET_SERVER::displayClientList(Print * display)
         // Display the client
         display->println("      |");
         display->println("      V");
-        display->printf("%p) Client IP Address: %s:%d\r\n",
-                        client,
+        display->printf("Telnet Client IP Address: %s:%d\r\n",
                         client->remoteIP().toString().c_str(),
                         client->remotePort());
 
@@ -57,6 +56,7 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
     bool debugState;
     bool displayOptions;
     R4A_TELNET_CLIENT ** previousClient;
+    R4A_COMMAND_PROCESSOR processCommand;
 
     debugState = _debugState;
     displayOptions = _displayOptions;
@@ -94,7 +94,7 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
 
             // Display the newClient
             if (debugState)
-                Serial.printf("_newClient: %p\r\n", _newClient);
+                Serial.printf("Telnet Client %p allocated\r\n", _newClient);
 
             // Enter listening state when memory is available
             if (_newClient)
@@ -125,10 +125,12 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
             if (*wifiClient)
             {
                 if (debugState)
-                    Serial.printf("%p) Client %s:%d connected\r\n",
-                                  _newClient,
+                    Serial.printf("Telnet Client %s:%d connected\r\n",
                                   _newClient->remoteIP().toString().c_str(),
                                   _newClient->remotePort());
+
+                // Set the initial stage of the command processor
+                _newClient->_processCommand = _processCommand;
 
                 // Display the main menu
                 _processCommand(nullptr, _newClient);
@@ -151,6 +153,8 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
         if (_newClient)
         {
             delete _newClient;
+            if (_debugState)
+                Serial.printf("Telnet Client %p deleted\r\n", _newClient);
             _newClient = nullptr;
         }
 
@@ -174,7 +178,8 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
         else
         {
             uint8_t buffer[16];
-            String * command;
+            const char * command;
+            String * line;
             uint8_t option;
             uint8_t parameter;
 
@@ -202,18 +207,47 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
 
                         // Display the option
                         if (displayOptions)
-                            Serial.printf("Ignoring option: 0xff 0x%02x 0x%02x\r\n",
-                                          option, parameter);
+                            Serial.printf("Telnet Client %s:%d ignoring option 0xff 0x%02x 0x%02x\r\n",
+                                          client->remoteIP().toString().c_str(),
+                                          client->remotePort(), option, parameter);
                     }
                 }
 
                 // Get a command from this client
-                command = r4aReadLine(_echo, &client->_command, (WiFiClient *)client);
+                line = r4aReadLine(_echo, &client->_command, client);
 
                 // If a command is available, process it
-                if (command)
+                if (line)
                 {
-                    clientDone = _processCommand(command->c_str(), client);
+                    // Determine if a command processor is available
+                    command = line->c_str();
+                    processCommand = client->_processCommand;
+                    if (processCommand)
+                    {
+                        // Start from the main menu
+                        if (!processCommand)
+                            processCommand = _processCommand;
+
+                        // Support nested menus
+                        if (strlen(command))
+                        {
+                            r4aProcessCommand = processCommand;
+                            clientDone = processCommand(command, client);
+                            processCommand = r4aProcessCommand;
+                            client->_processCommand = processCommand;
+                        }
+
+                        // Display the menu
+                        if (processCommand)
+                            processCommand(nullptr, client);
+
+                        // Command processing is complete if the command
+                        // processor is eliminated
+                        else
+                            clientDone = true;
+                    }
+                    else
+                        clientDone = true;
                     client->_command = "";
                 }
             }
@@ -228,7 +262,7 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
         {
             // Break the client connection
             if (debugState)
-                Serial.printf("Client %s:%d stopping\r\n",
+                Serial.printf("Telnet Client %s:%d stopping\r\n",
                               client->remoteIP().toString().c_str(),
                               client->remotePort());
             client->stop();
@@ -238,6 +272,8 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
 
             // Free this client
             delete client;
+            if (_debugState)
+                Serial.printf("Telnet Client %p deleted\r\n", client);
         }
     }
 }

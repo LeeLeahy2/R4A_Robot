@@ -11,27 +11,36 @@
 
 #include <WiFiServer.h>         // Built-in
 
-class R4A_TELNET_SERVER;
-
-class R4A_TELNET_CLIENT : public WiFiClient
-{
-private:
-    R4A_TELNET_CLIENT * _nextClient; // Next client in the server's client list
-    String _command; // User command received via telnet
-
-    // Allow the server to access the command string
-    friend R4A_TELNET_SERVER;
-};
-
 // Process the line received via telnet
 // Inputs:
 //   command: Zero terminated array of characters
 //   display: Address of Print object for output
 // Outputs:
 //   Returns true if the telnet connection should be broken and false otherwise
-typedef bool (* R4A_TELNET_COMMAND_PROCESSOR)(const char * command,
-                                              Print * display);
+typedef bool (* R4A_COMMAND_PROCESSOR)(const char * command,
+                                       Print * display);
 
+// Support sub-menu processing by changing this value
+extern volatile R4A_COMMAND_PROCESSOR r4aProcessCommand;
+
+// Forward declaration
+class R4A_TELNET_SERVER;
+
+//*********************************************************************
+// Telnet client
+class R4A_TELNET_CLIENT : public WiFiClient
+{
+private:
+    R4A_TELNET_CLIENT * _nextClient; // Next client in the server's client list
+    String _command; // User command received via telnet
+    R4A_COMMAND_PROCESSOR _processCommand; // Routine to process the commands
+
+    // Allow the server to access the command string
+    friend R4A_TELNET_SERVER;
+};
+
+//*********************************************************************
+// Telnet server
 class R4A_TELNET_SERVER : WiFiServer
 {
 private:
@@ -45,7 +54,7 @@ private:
     uint8_t _state; // Telnet server state
     uint16_t _port; // Port number for the telnet server
     bool _echo;
-    R4A_TELNET_COMMAND_PROCESSOR _processCommand; // Routine to process the commands
+    R4A_COMMAND_PROCESSOR _processCommand; // Routine to process the commands
     R4A_TELNET_CLIENT * _newClient; // New client object, ready for listen call
     R4A_TELNET_CLIENT * _clientList; // Singlely linked list of telnet clients
 
@@ -55,7 +64,7 @@ public:
     Print * _displayOptions; // Address of Print object to display telnet options
 
     // Constructor
-    R4A_TELNET_SERVER(R4A_TELNET_COMMAND_PROCESSOR processCommand, uint16_t port = 23, bool echo = false)
+    R4A_TELNET_SERVER(R4A_COMMAND_PROCESSOR processCommand, uint16_t port = 23, bool echo = false)
         : _state{0}, _port{port}, _echo{echo}, _processCommand{processCommand},
           _newClient{nullptr}, _clientList{nullptr}, _debugState{nullptr},
           _displayOptions{nullptr}, WiFiServer()

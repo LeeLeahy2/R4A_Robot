@@ -49,10 +49,6 @@ String * r4aReadLine(bool echo, String * buffer, WiFiClient * port)
             }
         }
 
-        // Echo the linefeed
-        else if (echo && (data == '\n'))
-            port->println();
-
         // Echo a carriage return and linefeed
         else if (data == '\r')
         {
@@ -61,6 +57,10 @@ String * r4aReadLine(bool echo, String * buffer, WiFiClient * port)
             line = buffer;
             break;
         }
+
+        // Echo the linefeed
+        else if (echo && (data == '\n'))
+            port->println();
     }
 
     // Return the line when it is complete
