@@ -4,7 +4,7 @@
   Display the contents of a buffer
 **********************************************************************/
 
-#include "R4A_Common.h"
+#include "R4A_Robot.h"
 
 //*********************************************************************
 // Dump the contents of a buffer

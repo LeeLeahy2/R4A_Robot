@@ -4,7 +4,7 @@
   WiFi stream support
 **********************************************************************/
 
-#include "R4A_Common.h"
+#include "R4A_Robot.h"
 
 //*********************************************************************
 // Read a line of input from a WiFi client into a String
