@@ -66,3 +66,39 @@ String * r4aReadLine(bool echo, String * buffer, HardwareSerial * port)
     // Return the line when it is complete
     return line;
 }
+
+//*********************************************************************
+// Process serial menu item
+void r4aSerialMenu(R4A_COMMAND_PROCESSOR mainMenu)
+{
+    const char * command;
+    String * line;
+    static String serialBuffer;
+    static R4A_COMMAND_PROCESSOR serialMenu;
+
+    // Process input from the serial port
+    line = r4aReadLine(true, &serialBuffer, &Serial);
+    if (line)
+    {
+        // Start from the main menu
+        if (!serialMenu)
+            serialMenu = mainMenu;
+
+        // Check for a command
+        command = line->c_str();
+        if (strlen(command))
+        {
+            // Process the command
+            r4aProcessCommand = serialMenu;
+            serialMenu(command, &Serial);
+            serialBuffer = "";
+
+            // Support sub-menus
+            serialMenu = r4aProcessCommand;
+        }
+
+        // Display the menu
+        if (serialMenu)
+            serialMenu(nullptr, &Serial);
+    }
+}

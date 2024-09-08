@@ -11,6 +11,10 @@
 
 #include <WiFiServer.h>         // Built-in
 
+//****************************************
+// Command Processor API
+//****************************************
+
 // Process the line received via telnet
 // Inputs:
 //   command: Zero terminated array of characters
@@ -22,6 +26,19 @@ typedef bool (* R4A_COMMAND_PROCESSOR)(const char * command,
 
 // Support sub-menu processing by changing this value
 extern volatile R4A_COMMAND_PROCESSOR r4aProcessCommand;
+
+//****************************************
+// Serial API
+//****************************************
+
+// Process serial menu item
+// Inputs:
+//   mainMenu: Address of the main menu function
+void r4aSerialMenu(R4A_COMMAND_PROCESSOR mainMenu);
+
+//****************************************
+// Telnet Client API
+//****************************************
 
 // Forward declaration
 class R4A_TELNET_SERVER;
@@ -38,6 +55,10 @@ private:
     // Allow the server to access the command string
     friend R4A_TELNET_SERVER;
 };
+
+//****************************************
+// Telnet Server API
+//****************************************
 
 //*********************************************************************
 // Telnet server
