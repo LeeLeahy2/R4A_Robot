@@ -1,6 +1,7 @@
 /**********************************************************************
   Telnet.cpp
 
+  Robots-For-All (R4A)
   Telnet client and server support
   See: https://www.rfc-editor.org/rfc/pdfrfc/rfc854.txt.pdf
 **********************************************************************/
