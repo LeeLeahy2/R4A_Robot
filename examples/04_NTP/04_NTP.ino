@@ -23,7 +23,7 @@ void setup()
     WiFi.begin(wifiSSID, wifiPassword);
 
     // Initialize the NTP client, time
-    ntpSetup(TIME_ZONE_SECONDS, true);
+    r4aNtpSetup(TIME_ZONE_SECONDS, true);
 }
 
 //*********************************************************************
@@ -34,5 +34,5 @@ void loop()
 
     // Notify the NTP client of WiFi changes
     wifiConnected = (WiFi.status() == WL_CONNECTED);
-    ntpUpdate(wifiConnected);
+    r4aNtpUpdate(wifiConnected);
 }

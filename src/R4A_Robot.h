@@ -32,6 +32,14 @@ extern volatile R4A_COMMAND_PROCESSOR r4aProcessCommand;
 // Serial API
 //****************************************
 
+// Repeatedly display a fatal error message
+// Inputs:
+//   errorMessage: Zero terminated string of characters containing the
+//                 error mesage to be displayed
+//   display: Device used for output
+void r4aReportFatalError(const char * errorMessage,
+                         Print * display = &Serial);
+
 // Process serial menu item
 // Inputs:
 //   mainMenu: Address of the main menu function

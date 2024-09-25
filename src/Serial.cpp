@@ -69,6 +69,23 @@ String * r4aReadLine(bool echo, String * buffer, HardwareSerial * port)
 }
 
 //*********************************************************************
+// Repeatedly display a fatal error message
+void r4aReportFatalError(const char * errorMessage,
+                         Print * display)
+{
+    static uint32_t lastDisplayMsec;
+
+    while (true)
+    {
+        if ((millis() - lastDisplayMsec) >= (15 * R4A_MILLISECONDS_IN_A_SECOND))
+        {
+            lastDisplayMsec = millis();
+            display->printf("ERROR: %s\r\n", errorMessage);
+        }
+    }
+}
+
+//*********************************************************************
 // Process serial menu item
 void r4aSerialMenu(R4A_COMMAND_PROCESSOR mainMenu)
 {
