@@ -11,112 +11,99 @@
 // Constants
 //****************************************
 
-enum NTP_STATE
+enum R4A_NTP_STATE
 {
-    NTP_STATE_WAIT_FOR_WIFI = 0,
-    NTP_STATE_GET_WIFI_UDP,
-    NTP_STATE_GET_NTP_CLIENT,
-    NTP_STATE_NTP_CLIENT_BEGIN,
-    NTP_STATE_GET_INITIAL_TIME,
-    NTP_STATE_TIME_UPDATE,
-    NTP_STATE_FREE_NTP_CLIENT,
-    NTP_STATE_FREE_WIFI_UDP
+    R4A_NTP_STATE_WAIT_FOR_WIFI = 0,
+    R4A_NTP_STATE_GET_WIFI_UDP,
+    R4A_NTP_STATE_GET_NTP_CLIENT,
+    R4A_NTP_STATE_NTP_CLIENT_BEGIN,
+    R4A_NTP_STATE_GET_INITIAL_TIME,
+    R4A_NTP_STATE_TIME_UPDATE,
+    R4A_NTP_STATE_FREE_NTP_CLIENT,
+    R4A_NTP_STATE_FREE_WIFI_UDP
 };
 
-const char * const ntpStateName[] =
+const char * const r4aNtpStateName[] =
 {
-    "NTP_STATE_WAIT_FOR_WIFI",
-    "NTP_STATE_GET_WIFI_UDP",
-    "NTP_STATE_GET_NTP_CLIENT",
-    "NTP_STATE_NTP_CLIENT_BEGIN",
-    "NTP_STATE_GET_INITIAL_TIME",
-    "NTP_STATE_TIME_UPDATE",
-    "NTP_STATE_FREE_NTP_CLIENT",
-    "NTP_STATE_FREE_WIFI_UDP"
+    "R4A_NTP_STATE_WAIT_FOR_WIFI",
+    "R4A_NTP_STATE_GET_WIFI_UDP",
+    "R4A_NTP_STATE_GET_NTP_CLIENT",
+    "R4A_NTP_STATE_NTP_CLIENT_BEGIN",
+    "R4A_NTP_STATE_GET_INITIAL_TIME",
+    "R4A_NTP_STATE_TIME_UPDATE",
+    "R4A_NTP_STATE_FREE_NTP_CLIENT",
+    "R4A_NTP_STATE_FREE_WIFI_UDP"
 };
-const uint8_t ntpStateNameCount = sizeof(ntpStateName) / sizeof(ntpStateName[0]);
+const uint8_t r4aNtpStateNameCount = sizeof(r4aNtpStateName) / sizeof(r4aNtpStateName[0]);
 
 //****************************************
 // Globals
 //****************************************
 
-bool ntpDebugStates; // Set true to display state changes
+bool r4aNtpDebugStates; // Set true to display state changes
 
 //****************************************
 // Locals
 //****************************************
 
-static NTPClient * ntpClient;
-static bool ntpDisplayInitialTime;
-static uint8_t ntpState;
-static long ntpTimeZoneOffsetSeconds;
-static WiFiUDP * ntpUDP;
+static NTPClient * r4aNtpClient;
+static bool r4aNtpDisplayInitialTime;
+static uint8_t r4aNtpState;
+static long r4aNtpTimeZoneOffsetSeconds;
+static WiFiUDP * r4aNtpUDP;
 
 //*********************************************************************
-// Initialize the NTP server
-void ntpSetup(long timeZoneOffsetSeconds, bool displayInitialTime)
+// Display the date and time
+void r4aNtpDisplayDateTime(Print * display)
 {
-    ntpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
-    ntpDisplayInitialTime = displayInitialTime;
+    time_t seconds = r4aNtpGetEpochTime();
+    display->printf("%s %s\r\n",
+                    r4aNtpGetDate(seconds).c_str(),
+                    r4aNtpGetTime24(seconds).c_str());
 }
 
 //*********************************************************************
-// Determine if the time is valid
-bool ntpIsTimeValid()
+// Get the date string
+// Returns the date as yyyy-mm-dd or "Time not set"
+String r4aNtpGetDate(uint32_t seconds)
 {
-    return (ntpState == NTP_STATE_TIME_UPDATE);
+    char date[128];
+
+    if (!seconds)
+        return String("Time not set");
+
+    // Format the date
+    sprintf(date, "%4d-%02d-%02d", year(seconds), month(seconds), day(seconds));
+    return String(date);
 }
 
 //*********************************************************************
-// Set the time zone
-void ntpSetTimeZone(long timeZoneOffsetSeconds)
+// Get the number of seconds from 1 Jan 1970
+//   Returns the number of seconds from 1 Jan 1970
+uint32_t r4aNtpGetEpochTime()
 {
-    ntpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
-    if (ntpIsTimeValid())
-        ntpClient->setTimeOffset(timeZoneOffsetSeconds);
-}
+    time_t seconds;
 
-//*********************************************************************
-// Update the NTP state variable
-void ntpSetState(uint8_t newState)
-{
-    const char * stateName;
-    const char * newStateName;
-
-    // Get the state names
-    if (ntpDebugStates)
-    {
-        if (newState >= ntpStateNameCount)
-            newStateName = "Unknown";
-        else
-            newStateName = ntpStateName[newState];
-        if (ntpState >= ntpStateNameCount)
-            stateName = "Unknown";
-        else
-            stateName = ntpStateName[ntpState];
-
-        // Display the state transition
-        Serial.printf("(%d) %s --> %s (%d)\r\n",
-                      ntpState, stateName, newStateName, newState);
-    }
-
-    // Update the state
-    ntpState = newState;
+    if ((r4aNtpState < R4A_NTP_STATE_GET_INITIAL_TIME)
+        || (r4aNtpState > R4A_NTP_STATE_TIME_UPDATE))
+        return 0;
+    seconds = r4aNtpClient->getEpochTime();
+    return seconds;
 }
 
 //*********************************************************************
 // Get the time as hh:mm:ss
-String ntpGetTime()
+String r4aNtpGetTime()
 {
-    if (!ntpIsTimeValid())
+    if (!r4aNtpIsTimeValid())
         return "Time not set";
-    return ntpClient->getFormattedTime();
+    return r4aNtpClient->getFormattedTime();
 }
 
 //*********************************************************************
 // Get the time string in 12 hour format
 // Returns time as hh:mm:ss xM or "Time not set"
-String ntpGetTime12(uint32_t seconds)
+String r4aNtpGetTime12(uint32_t seconds)
 {
     char time[128];
 
@@ -134,7 +121,7 @@ String ntpGetTime12(uint32_t seconds)
 
 //*********************************************************************
 // Get the time string in 24 hour format
-String ntpGetTime24(uint32_t seconds)
+String r4aNtpGetTime24(uint32_t seconds)
 {
     char time[128];
 
@@ -147,129 +134,147 @@ String ntpGetTime24(uint32_t seconds)
 }
 
 //*********************************************************************
-// Get the number of seconds from 1 Jan 1970
-//   Returns the number of seconds from 1 Jan 1970
-uint32_t ntpGetEpochTime()
+// Determine if the time is valid
+bool r4aNtpIsTimeValid()
 {
-    time_t seconds;
-
-    if ((ntpState < NTP_STATE_GET_INITIAL_TIME)
-        || (ntpState > NTP_STATE_TIME_UPDATE))
-        return 0;
-    seconds = ntpClient->getEpochTime();
-    return seconds;
+    return (r4aNtpState == R4A_NTP_STATE_TIME_UPDATE);
 }
 
 //*********************************************************************
-// Get the date string
-// Returns the date as yyyy-mm-dd or "Time not set"
-String ntpGetDate(uint32_t seconds)
+// Update the NTP state variable
+void r4aNtpSetState(uint8_t newState)
 {
-    char date[128];
+    const char * stateName;
+    const char * newStateName;
 
-    if (!seconds)
-        return String("Time not set");
+    // Get the state names
+    if (r4aNtpDebugStates)
+    {
+        if (newState >= r4aNtpStateNameCount)
+            newStateName = "Unknown";
+        else
+            newStateName = r4aNtpStateName[newState];
+        if (r4aNtpState >= r4aNtpStateNameCount)
+            stateName = "Unknown";
+        else
+            stateName = r4aNtpStateName[r4aNtpState];
 
-    // Format the date
-    sprintf(date, "%4d-%02d-%02d", year(seconds), month(seconds), day(seconds));
-    return String(date);
+        // Display the state transition
+        Serial.printf("(%d) %s --> %s (%d)\r\n",
+                      r4aNtpState, stateName, newStateName, newState);
+    }
+
+    // Update the state
+    r4aNtpState = newState;
+}
+
+//*********************************************************************
+// Set the time zone
+void r4aNtpSetTimeZone(long timeZoneOffsetSeconds)
+{
+    r4aNtpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
+    if (r4aNtpIsTimeValid())
+        r4aNtpClient->setTimeOffset(timeZoneOffsetSeconds);
+}
+
+//*********************************************************************
+// Initialize the NTP server
+void r4aNtpSetup(long timeZoneOffsetSeconds, bool displayInitialTime)
+{
+    r4aNtpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
+    r4aNtpDisplayInitialTime = displayInitialTime;
 }
 
 //*********************************************************************
 // Update the NTP client and system time
-void ntpUpdate(bool wifiConnected)
+void r4aNtpUpdate(bool wifiConnected)
 {
-    switch (ntpState)
+    switch (r4aNtpState)
     {
     default:
         break;
 
-    case NTP_STATE_WAIT_FOR_WIFI:
+    case R4A_NTP_STATE_WAIT_FOR_WIFI:
         // Wait until WiFi is available
         if (wifiConnected)
-            ntpSetState(NTP_STATE_GET_WIFI_UDP);
+            r4aNtpSetState(R4A_NTP_STATE_GET_WIFI_UDP);
         break;
 
-    case NTP_STATE_GET_WIFI_UDP:
+    case R4A_NTP_STATE_GET_WIFI_UDP:
         // Determine if the network has failed
         if (!wifiConnected)
-            ntpSetState(NTP_STATE_WAIT_FOR_WIFI);
+            r4aNtpSetState(R4A_NTP_STATE_WAIT_FOR_WIFI);
         else
         {
             // Allocate the WiFi UDP object
-            ntpUDP = new WiFiUDP();
-            if (ntpUDP)
-                ntpSetState(NTP_STATE_GET_NTP_CLIENT);
+            r4aNtpUDP = new WiFiUDP();
+            if (r4aNtpUDP)
+                r4aNtpSetState(R4A_NTP_STATE_GET_NTP_CLIENT);
         }
         break;
 
-    case NTP_STATE_GET_NTP_CLIENT:
+    case R4A_NTP_STATE_GET_NTP_CLIENT:
         // Determine if the network has failed
         if (!wifiConnected)
-            ntpSetState(NTP_STATE_FREE_WIFI_UDP);
+            r4aNtpSetState(R4A_NTP_STATE_FREE_WIFI_UDP);
         else
         {
             // Allocate the NTP client object
-            ntpClient = new NTPClient(*ntpUDP);
-            if (ntpClient)
-                ntpSetState(NTP_STATE_NTP_CLIENT_BEGIN);
+            r4aNtpClient = new NTPClient(*r4aNtpUDP);
+            if (r4aNtpClient)
+                r4aNtpSetState(R4A_NTP_STATE_NTP_CLIENT_BEGIN);
         }
         break;
 
-    case NTP_STATE_NTP_CLIENT_BEGIN:
+    case R4A_NTP_STATE_NTP_CLIENT_BEGIN:
         // Determine if the network has failed
         if (!wifiConnected)
-            ntpSetState(NTP_STATE_FREE_NTP_CLIENT);
+            r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
         else
         {
             // Start the NTP object
-            ntpClient->begin();
-            ntpSetState(NTP_STATE_GET_INITIAL_TIME);
+            r4aNtpClient->begin();
+            r4aNtpSetState(R4A_NTP_STATE_GET_INITIAL_TIME);
         }
         break;
 
-    case NTP_STATE_GET_INITIAL_TIME:
+    case R4A_NTP_STATE_GET_INITIAL_TIME:
         // Determine if the network has failed
         if (!wifiConnected)
-            ntpSetState(NTP_STATE_FREE_NTP_CLIENT);
+            r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
         else
         {
             // Attempt to get the time
-            ntpClient->update();
-            if (ntpClient->isTimeSet())
+            r4aNtpClient->update();
+            if (r4aNtpClient->isTimeSet())
             {
-                ntpClient->setTimeOffset(ntpTimeZoneOffsetSeconds);
-                if (ntpDisplayInitialTime)
-                {
-                    time_t seconds = ntpGetEpochTime();
-                    Serial.printf("%s %s\r\n",
-                                  ntpGetDate(seconds).c_str(),
-                                  ntpGetTime24(seconds).c_str());
-                }
-                ntpSetState(NTP_STATE_TIME_UPDATE);
+                r4aNtpClient->setTimeOffset(r4aNtpTimeZoneOffsetSeconds);
+                if (r4aNtpDisplayInitialTime)
+                    r4aNtpDisplayDateTime();
+                r4aNtpSetState(R4A_NTP_STATE_TIME_UPDATE);
             }
         }
         break;
 
-    case NTP_STATE_TIME_UPDATE:
+    case R4A_NTP_STATE_TIME_UPDATE:
         // Determine if the network has failed
         if (!wifiConnected)
-            ntpSetState(NTP_STATE_FREE_NTP_CLIENT);
+            r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
         else
             // Update the time each minute
-            ntpClient->update();
+            r4aNtpClient->update();
         break;
 
-    case NTP_STATE_FREE_NTP_CLIENT:
+    case R4A_NTP_STATE_FREE_NTP_CLIENT:
         // Done with the NTP client
-        delete ntpClient;
-        ntpSetState(NTP_STATE_FREE_WIFI_UDP);
+        delete r4aNtpClient;
+        r4aNtpSetState(R4A_NTP_STATE_FREE_WIFI_UDP);
         break;
 
-    case NTP_STATE_FREE_WIFI_UDP:
+    case R4A_NTP_STATE_FREE_WIFI_UDP:
         // Done with the WiFi UDP object
-        delete ntpUDP;
-        ntpSetState(NTP_STATE_WAIT_FOR_WIFI);
+        delete r4aNtpUDP;
+        r4aNtpSetState(R4A_NTP_STATE_WAIT_FOR_WIFI);
         break;
     }
 }

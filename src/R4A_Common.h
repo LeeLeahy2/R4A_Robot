@@ -77,51 +77,55 @@ void r4aLockRelease(volatile int * lock);
 // NTP API
 //****************************************
 
-extern bool ntpDebugStates; // Set true to display state changes
+extern bool r4aNtpDebugStates; // Set true to display state changes
 
-//*********************************************************************
-// Determine if the time is valid
-// Outputs:
-//   Returns true when the time and date are valid
-bool ntpIsTimeValid();
-
-// Get the time as hh:mm:ss
-// Outputs:
-//   Returns time as hh:mm:ss or "Time not set"
-String ntpGetTime();
-
-// Get the time string in 12 hour format
-// Outputs:
-//   Returns time as hh:mm:ss xM or "Time not set"
-String ntpGetTime12(uint32_t seconds);
-
-// Get the time string in 24 hour format
-// Outputs:
-//   Returns time as hh:mm:ss or "Time not set"
-String ntpGetTime24(uint32_t seconds);
-
-// Get the number of seconds from 1 Jan 1970
-// Outputs:
-//   Returns the number of seconds from 1 Jan 1970
-uint32_t ntpGetEpochTime();
+// Display the date and time
+// Inputs:
+//   display: Device used for output
+void r4aNtpDisplayDateTime(Print * display = &Serial);
 
 // Get the date string
 // Inputs:
 //   seconds: The number of seconds from 1 Jan 1970
 // Outputs:
 //   Returns the date as yyyy-mm-dd or "Time not set"
-String ntpGetDate(uint32_t seconds);
+String r4aNtpGetDate(uint32_t seconds);
+
+// Get the number of seconds from 1 Jan 1970
+// Outputs:
+//   Returns the number of seconds from 1 Jan 1970
+uint32_t r4aNtpGetEpochTime();
+
+// Get the time as hh:mm:ss
+// Outputs:
+//   Returns time as hh:mm:ss or "Time not set"
+String r4aNtpGetTime();
+
+// Get the time string in 12 hour format
+// Outputs:
+//   Returns time as hh:mm:ss xM or "Time not set"
+String r4aNtpGetTime12(uint32_t seconds);
+
+// Get the time string in 24 hour format
+// Outputs:
+//   Returns time as hh:mm:ss or "Time not set"
+String r4aNtpGetTime24(uint32_t seconds);
+
+// Determine if the time is valid
+// Outputs:
+//   Returns true when the time and date are valid
+bool r4aNtpIsTimeValid();
 
 // Update the NTP client and system time
 // Inputs:
 //   wifiConnected: True when WiFi is connected to an access point, false otherwise
-void ntpUpdate(bool wifiConnected);
+void r4aNtpUpdate(bool wifiConnected);
 
 // Initialize the NTP server
 // Inputs:
 //   timeZoneOffsetSeconds: Time zone offset from GMT in seconds
 //   displayInitialTime: Display the time once NTP gets the time
-void ntpSetup(long timeZoneOffsetSeconds, bool displayInitialTime);
+void r4aNtpSetup(long timeZoneOffsetSeconds, bool displayInitialTime);
 
 //****************************************
 // ReadLine API
