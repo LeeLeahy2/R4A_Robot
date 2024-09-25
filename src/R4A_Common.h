@@ -161,4 +161,17 @@ String * r4aReadLine(bool echo, String * buffer, WiFiClient * port);
 //   Returns the delta value of the last comparison (str1[x] - str2[x])
 int r4aStricmp(const char *str1, const char *str2);
 
+//****************************************
+// Strincmp API
+//****************************************
+
+// Compare two strings limited to N characters ignoring case
+// Inputs:
+//   str1: Address of a zero terminated string of characters
+//   str2: Address of a zero terminated string of characters
+//   length: Maximum number of characters to compare
+// Outputs:
+//   Returns the delta value of the last comparison (str1[x] - str2[x])
+int r4aStrincmp(const char *str1, const char *str2, int length);
+
 #endif  // __R4A_COMMON_H__

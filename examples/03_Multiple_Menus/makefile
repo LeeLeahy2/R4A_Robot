@@ -12,7 +12,7 @@ SHELL=/bin/bash
 # Source files
 ##########
 
-SKETCH=03_Serial_Menu
+SKETCH=03_Multiple_Menus
 ESP32_CHIP=esp32wrover
 ESP32_VERSION=2.0.11
 PARTITION_FILE_NAME=huge_app

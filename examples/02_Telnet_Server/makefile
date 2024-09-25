@@ -12,7 +12,7 @@ SHELL=/bin/bash
 # Source files
 ##########
 
-SKETCH=01_Telnet_Server
+SKETCH=02_Telnet_Server
 ESP32_CHIP=esp32wrover
 ESP32_VERSION=2.0.11
 PARTITION_FILE_NAME=huge_app

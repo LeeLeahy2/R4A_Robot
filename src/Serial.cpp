@@ -87,36 +87,25 @@ void r4aReportFatalError(const char * errorMessage,
 
 //*********************************************************************
 // Process serial menu item
-void r4aSerialMenu(R4A_COMMAND_PROCESSOR mainMenu)
+void r4aSerialMenu(R4A_MENU * menu)
 {
     const char * command;
     String * line;
     static String serialBuffer;
-    static R4A_COMMAND_PROCESSOR serialMenu;
 
     // Process input from the serial port
     line = r4aReadLine(true, &serialBuffer, &Serial);
     if (line)
     {
-        // Start from the main menu
-        if (!serialMenu)
-            serialMenu = mainMenu;
-
-        // Check for a command
+        // Get the command
         command = line->c_str();
-        if (strlen(command))
-        {
-            // Process the command
-            r4aProcessCommand = serialMenu;
-            serialMenu(command, &Serial);
-            serialBuffer = "";
 
-            // Support sub-menus
-            serialMenu = r4aProcessCommand;
-        }
+        // Process the command
+        if (!menu->process(command, &Serial))
+            // Display the menu
+            menu->process(nullptr, &Serial);
 
-        // Display the menu
-        if (serialMenu)
-            serialMenu(nullptr, &Serial);
+        // Start building the next command
+        serialBuffer = "";
     }
 }

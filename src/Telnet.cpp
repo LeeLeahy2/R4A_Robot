@@ -57,7 +57,6 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
     bool debugState;
     bool displayOptions;
     R4A_TELNET_CLIENT ** previousClient;
-    R4A_COMMAND_PROCESSOR processCommand;
 
     debugState = _debugState;
     displayOptions = _displayOptions;
@@ -91,7 +90,13 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
         {
             // Wifi still connected to an access point
             // Allocate the next client heap is available
-            _newClient = new R4A_TELNET_CLIENT();
+            _newClient = new R4A_TELNET_CLIENT(_menuTable,
+                                               _menuTableEntries,
+                                               _blankLineBeforePreMenu,
+                                               _blankLineBeforeMenuHeader,
+                                               _blankLineAfterMenuHeader,
+                                               _alignCommands,
+                                               _blankLineAfterMenu);
 
             // Display the newClient
             if (debugState)
@@ -130,11 +135,8 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
                                   _newClient->remoteIP().toString().c_str(),
                                   _newClient->remotePort());
 
-                // Set the initial stage of the command processor
-                _newClient->_processCommand = _processCommand;
-
                 // Display the main menu
-                _processCommand(nullptr, _newClient);
+                _newClient->_menu.process(nullptr, _newClient);
 
                 // Add this client to the list of clients
                 _newClient->_nextClient = _clientList;
@@ -220,35 +222,14 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
                 // If a command is available, process it
                 if (line)
                 {
-                    // Determine if a command processor is available
+                    // Process the command
                     command = line->c_str();
-                    processCommand = client->_processCommand;
-                    if (processCommand)
-                    {
-                        // Start from the main menu
-                        if (!processCommand)
-                            processCommand = _processCommand;
-
-                        // Support nested menus
-                        if (strlen(command))
-                        {
-                            r4aProcessCommand = processCommand;
-                            clientDone = processCommand(command, client);
-                            processCommand = r4aProcessCommand;
-                            client->_processCommand = processCommand;
-                        }
-
+                    clientDone = client->_menu.process(command, client);
+                    if (!clientDone)
                         // Display the menu
-                        if (processCommand)
-                            processCommand(nullptr, client);
+                        client->_menu.process(nullptr, client);
 
-                        // Command processing is complete if the command
-                        // processor is eliminated
-                        else
-                            clientDone = true;
-                    }
-                    else
-                        clientDone = true;
+                    // Start building the next command
                     client->_command = "";
                 }
             }
@@ -277,4 +258,36 @@ void R4A_TELNET_SERVER::update(bool wifiConnected)
                 Serial.printf("Telnet Client %p deleted\r\n", client);
         }
     }
+}
+
+//*********************************************************************
+// Display the telnet clients
+void r4aTelnetMenuClients(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    telnet.displayClientList(display);
+}
+
+//*********************************************************************
+// Display the telnet options
+void r4aTelnetMenuOptions(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    telnet._displayOptions = telnet._displayOptions ? nullptr : &Serial;
+}
+
+//*********************************************************************
+// Display the telnet options
+void r4aTelnetMenuState(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    telnet._debugState = telnet._debugState ? nullptr : &Serial;
+}
+
+//*********************************************************************
+// Display the telnet state
+void r4aTelnetMenuStateDisplay(Print * display)
+{
+    // Telnet state
+    display->printf("_displayOptions: %s\r\n",
+                    telnet._displayOptions ? "Enabled" : "Disabled");
+    display->printf("_debugState: %s\r\n",
+                    telnet._debugState ? "Enabled" : "Disabled");
 }

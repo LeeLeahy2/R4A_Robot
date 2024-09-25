@@ -12,7 +12,7 @@ SHELL=/bin/bash
 # Source files
 ##########
 
-SKETCH=02_Multiple_Menus
+SKETCH=01_Serial_Menu
 ESP32_CHIP=esp32wrover
 ESP32_VERSION=2.0.11
 PARTITION_FILE_NAME=huge_app
@@ -105,7 +105,7 @@ Car:	$(BIN_FILE)
 #DEBUG_LEVEL=debug
 DEBUG_LEVEL=none
 
-$(BIN_FILE):	$(SKETCH).ino   *.ino   *.h   makefile
+$(BIN_FILE):	$(SKETCH).ino   *.ino   makefile
 	$(CLEAR)
 	echo "----------------------------------------------------------------------"
 	$(ARDUINO_CLI)  \
