@@ -115,11 +115,11 @@ class R4A_MENU
             bool blankLineAfterMenuHeader = false,
             bool alignCommands = true,
             bool blankLineAfterMenu = false)
-        : _menuTable(menuTable), _menuTableEntries(menuEntries),
-          _blankLineBeforePreMenu(blankLineBeforePreMenu),
-          _blankLineBeforeMenuHeader(blankLineBeforeMenuHeader),
-          _blankLineAfterMenuHeader(blankLineAfterMenuHeader),
-          _alignCommands(alignCommands), _blankLineAfterMenu(blankLineAfterMenu)
+        : _menuTable{menuTable}, _menuTableEntries{menuEntries},
+          _blankLineBeforePreMenu{blankLineBeforePreMenu},
+          _blankLineBeforeMenuHeader{blankLineBeforeMenuHeader},
+          _blankLineAfterMenuHeader{blankLineAfterMenuHeader},
+          _alignCommands{alignCommands}, _blankLineAfterMenu{blankLineAfterMenu}
     {
     }
 
@@ -212,9 +212,9 @@ public:
                       bool blankLineAfterMenuHeader = false,
                       bool alignCommands = true,
                       bool blankLineAfterMenu = false)
-        : _menu(R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
+        : _menu{R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
                 blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
-                alignCommands, blankLineAfterMenu))
+                alignCommands, blankLineAfterMenu)}
     {
     }
 
@@ -307,13 +307,13 @@ public:
                       bool blankLineAfterMenu = false,
                       uint16_t port = 23,
                       bool echo = false)
-        : _menuTable(menuTable), _menuTableEntries(menuTableEntries),
+        : _menuTable{menuTable}, _menuTableEntries{menuTableEntries},
           _state{0}, _port{port}, _echo{echo}, _newClient{nullptr},
           _clientList{nullptr}, _debugState{nullptr}, _displayOptions{nullptr},
-          _blankLineBeforePreMenu(blankLineBeforePreMenu),
-          _blankLineBeforeMenuHeader(blankLineBeforeMenuHeader),
-          _blankLineAfterMenuHeader(blankLineAfterMenuHeader),
-          _alignCommands(alignCommands), _blankLineAfterMenu(blankLineAfterMenu),
+          _blankLineBeforePreMenu{blankLineBeforePreMenu},
+          _blankLineBeforeMenuHeader{blankLineBeforeMenuHeader},
+          _blankLineAfterMenuHeader{blankLineAfterMenuHeader},
+          _alignCommands{alignCommands}, _blankLineAfterMenu{blankLineAfterMenu},
           WiFiServer()
     {
     }
