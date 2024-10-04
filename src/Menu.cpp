@@ -41,8 +41,7 @@ bool R4A_MENU::process(const char * command,
             if (menuEntry->align)
             {
                 length = strlen(cmd);
-                found = (r4aStrincmp(command, cmd, length) == 0)
-                    && (command[length] <= ' ');
+                found = (r4aStrincmp(command, cmd, length) == 0);
             }
             else
                 found = (r4aStricmp(command, cmd) == 0);
