@@ -84,6 +84,89 @@ void r4aDumpBuffer(uint32_t offset,
                    Print * display = &Serial);
 
 //****************************************
+// LED API
+//****************************************
+
+#define R4A_LED_AQUA                    0x0000ffff
+#define R4A_LED_BLACK                   0x00000000
+#define R4A_LED_BLUE                    0x000000ff
+#define R4A_LED_CYAN                    0x00ff00ff
+#define R4A_LED_GREEN                   0x0000ff00
+#define R4A_LED_OFF                     R4A_LED_BLACK
+#define R4A_LED_ORANGE                  0x00ff8000
+#define R4A_LED_PINK                    R4A_LED_CYAN
+#define R4A_LED_PURPLE                  0x008000ff
+#define R4A_LED_RED                     0x00ff0000
+#define R4A_LED_WHITE_ALL               0xffffffff
+#define R4A_LED_WHITE_RGB               0x00ffffff
+#define R4A_LED_WHITE_RGBW              0xff000000
+#define R4A_LED_YELLOW                  0x00ffff00
+
+// Set the WS2812 LED colors
+// Inputs:
+//   ledNumber: Index into the LED color array
+//   color: Red bits: 23 - 16, Green bits: 15 - 8, Blue bits; 7 - 0
+void r4aLEDSetColorRgb(uint8_t ledNumber, uint32_t color);
+
+// Set the WS2812 LED colors
+// Inputs:
+//   ledNumber: Index into the LED color array
+//   red: Intensity of the red LED
+//   green: Intensity of the green LED
+//   blue: Intensity of the blue LED
+void r4aLEDSetColorRgb(uint8_t ledNumber,
+                       uint8_t red,
+                       uint8_t green,
+                       uint8_t blue);
+
+// Set the SK6812RGBW LED colors
+// Inputs:
+//   ledNumber: Index into the LED color array
+//   color: White bits: 31 - 24, Red bits: 23 - 16, Green bits: 15 - 8, Blue bits; 7 - 0
+void r4aLEDSetColorWrgb(uint8_t ledNumber,
+                        uint32_t color);
+
+// Set the SK6812RGBW LED colors
+// Inputs:
+//   ledNumber: Index into the LED color array
+//   white: Intensity of the white LED
+//   red: Intensity of the red LED
+//   green: Intensity of the green LED
+//   blue: Intensity of the blue LED
+void r4aLEDSetColorWrgb(uint8_t ledNumber,
+                        uint8_t white,
+                        uint8_t red,
+                        uint8_t green,
+                        uint8_t blue);
+
+// Set the intensity
+// Inputs:
+//   Intensity: A number in the range of (0 - 255), 0 = off, 255 = on full
+void r4aLEDSetIntensity(uint8_t intensity);
+
+// Initialize the WS2812 LEDs
+// Inputs:
+//   spiNumber: Number of the SPI bus
+//   pinMOSI: Pin number of the MOSI pin that connects to the SPI TX data line
+//   ClockHz: SPI clock frequency in Hertz
+//   numberOfLEDs: Number of multi-color LEDs in the string
+// Outputs:
+//   Returns true for successful initialization and false upon error
+bool r4aLEDSetup(uint8_t spiNumber,
+                 uint8_t pinMOSI,
+                 uint32_t clockHz,
+                 uint8_t numberOfLEDs);
+
+// Turn off the LEDs
+void r4aLEDsOff();
+
+// Update the colors on the WS2812 LEDs
+// Inputs:
+//   updateRequest: When true causes color data to be sent to the LEDS
+//                  When false only updates LEDs if color or intensity was changed
+void r4aLEDUpdate(bool updateRequest);
+
+//****************************************
 // Lock API
 //****************************************
 
