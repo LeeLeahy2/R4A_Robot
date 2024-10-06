@@ -314,6 +314,42 @@ void r4aReportFatalError(const char * errorMessage,
 void r4aSerialMenu(R4A_MENU * menu);
 
 //****************************************
+// SPI API
+//****************************************
+
+class R4A_SPI
+{
+  public:
+
+    // Allocate DMA buffer
+    // Inputs:
+    //   length: Number of data bytes to allocate
+    // Outputs:
+    //   Returns the buffer address if successful and nullptr otherwise
+    virtual uint8_t * allocateDmaBuffer(int length);
+
+    // Initialize the SPI controller
+    // Inputs:
+    //   spiNumber: Number of the SPI controller
+    //   pinMOSI: SPI TX data pin number
+    //   clockHz: SPI clock frequency in Hertz
+    // Outputs:
+    //   Return true if successful and false upon failure
+    virtual bool begin(uint8_t spiNumber, uint8_t pinMOSI, uint32_t clockHz);
+
+    // Transfer data to the SPI device
+    // Inputs:
+    //   txBuffer: Address of the buffer containing the data to send
+    //   rxBuffer: Address of the receive data buffer
+    //   length: Number of data bytes to transfer
+    virtual void transfer(const uint8_t * txBuffer,
+                          uint8_t * rxBuffer,
+                          uint32_t length);
+};
+
+extern R4A_SPI * r4aSpi;
+
+//****************************************
 // Stricmp API
 //****************************************
 
