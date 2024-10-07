@@ -395,18 +395,21 @@ extern const R4A_MENU_ENTRY r4aTelnetMenuTable[]; // Telnet menu table
 
 // Display the telnet clients
 // Inputs:
+//   menuEntry: Address of the object describing the menu entry
 //   command: Zero terminated command string
 //   display: Device used for output
 void r4aTelnetMenuClients(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 
 // Display the telnet options
 // Inputs:
+//   menuEntry: Address of the object describing the menu entry
 //   command: Zero terminated command string
 //   display: Device used for output
 void r4aTelnetMenuOptions(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 
 // Display the telnet options
 // Inputs:
+//   menuEntry: Address of the object describing the menu entry
 //   command: Zero terminated command string
 //   display: Device used for output
 void r4aTelnetMenuState(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
