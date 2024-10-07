@@ -411,3 +411,226 @@ void r4aLEDUpdate(bool updateRequest)
     if (updateRequest)
         r4aSpi->transfer(r4aLEDTxDmaBuffer, nullptr, length);
 }
+
+//****************************************
+// LED Menu API
+//****************************************
+
+//*********************************************************************
+// Display the help text with mm and ssss
+void r4aLEDMenuHelpiii(const struct _R4A_MENU_ENTRY * menuEntry,
+                       const char * align,
+                       Print * display)
+{
+    display->printf("%s iii: %s%s\r\n",
+                    menuEntry->command, align, menuEntry->helpText);
+}
+
+//*********************************************************************
+// Display the help text with mm and ssss
+void r4aLEDMenuHelpllcccc(const struct _R4A_MENU_ENTRY * menuEntry,
+                          const char * align,
+                          Print * display)
+{
+    display->printf("%s ll cccccccc: %s%s\r\n",
+                    menuEntry->command, align, menuEntry->helpText);
+}
+
+//*********************************************************************
+// Get the intensity
+bool r4aLEDMenuGetIntensity(const R4A_MENU_ENTRY * menuEntry,
+                            const char * command,
+                            int * values,
+                            uint8_t * intensity)
+{
+    int i;
+
+    // Get the parameter name
+    String line = String(&command[strlen(menuEntry->command)]);
+
+    // Strip white space from the beginning of the name
+    line.trim();
+
+    // Get the value
+    *values = sscanf(line.c_str(), "%d", &i);
+
+    // Determine if the value is within range
+    if ((*values == 1) && (i >= 0) && (i <= 255))
+    {
+        *intensity = i;
+        return true;
+    }
+    return false;
+}
+
+//*********************************************************************
+// Get the LED number and color value
+bool r4aLEDMenuGetLedColor(const R4A_MENU_ENTRY * menuEntry,
+                           const char * command,
+                           int * values,
+                           uint8_t * led,
+                           uint32_t * color)
+{
+    int c;
+    int l;
+
+    // Get the parameter name
+    String line = String(&command[strlen(menuEntry->command)]);
+
+    // Strip white space from the beginning of the name
+    line.trim();
+
+    // Get the values
+    *values = sscanf(line.c_str(), "%d %x", &l, &c);
+
+    // Determine if the values are within range
+    if ((*values == 2)
+        && (l >= 0)
+        && (l < r4aLEDs))
+    {
+        *led = l;
+        *color = c;
+        return true;
+    }
+    else if (*values == 1)
+        *led = l;
+    return false;
+}
+
+//*********************************************************************
+// Set the WS2812 LED color
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuColor3(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    uint8_t led;
+    uint32_t color;
+    int values;
+
+    if (r4aLEDMenuGetLedColor(menuEntry, command, &values, &led, &color))
+    {
+        r4aLEDSetColorRgb(led, color);
+        r4aLEDUpdate(true);
+    }
+    else if (values == 1)
+    {
+        if (display)
+            display->println("ERROR: Please specify a color in hex as RRGGBB");
+    }
+    else
+    {
+        if (display)
+            display->printf("ERROR: Please specify a LED number in the range of (0 - %d)", r4aLEDs - 1);
+    }
+}
+
+//*********************************************************************
+// Set the SK6812RGBW LED color
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuColor4(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    uint8_t led;
+    uint32_t color;
+    int values;
+
+    if (r4aLEDMenuGetLedColor(menuEntry, command, &values, &led, &color))
+    {
+        r4aLEDSetColorWrgb(led, color);
+        r4aLEDUpdate(true);
+    }
+    else if (values == 1)
+    {
+        if (display)
+            display->println("ERROR: Please specify a color in hex as WWRRGGBB");
+    }
+    else
+    {
+        if (display)
+            display->printf("ERROR: Please specify a LED number in the range of (0 - %d)", r4aLEDs - 1);
+    }
+}
+
+//*********************************************************************
+// Display the LED status
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuDisplay(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    uint8_t blue;
+    uint32_t color;
+    uint8_t green;
+    uint32_t intensity;
+    uint8_t red;
+    uint8_t white;
+
+    if (display)
+    {
+        //                ll:   xxx    xxx    xxx    xxx   0xxxxxxxxx   0xxxxxxxxx
+        display->println("LED  White   Red   Green  Blue          Hex   Programmed");
+        display->println("--------------------------------------------------------");
+        for (int led = 0; led < r4aLEDs; led++)
+        {
+            // Breakup the color value
+            color = r4aLEDColor[led];
+            white = color >> 24;
+            red = (color >> 16) & 0xff;
+            green = (color >> 8) & 0xff;
+            blue = color & 0xff;
+            intensity = (((white * r4aLEDIntensity) / 255) << 24)
+                      | (((red   * r4aLEDIntensity) / 255) << 16)
+                      | (((green * r4aLEDIntensity) / 255) << 8)
+                      |  ((blue  * r4aLEDIntensity) / 255);
+
+            if (r4aLEDFourColorsBitmap[led >> 3] & (1 << (led & 7)))
+                display->printf("%2d:   %3d    %3d    %3d    %3d   0x%08x   0x%08x\r\n",
+                                led, white, red, green, blue, color, intensity);
+
+            else
+                display->printf("%2d:          %3d    %3d    %3d     0x%06x     0x%06x\r\n",
+                                led, red, green, blue, color, intensity);
+        }
+        display->printf("Intensity: %d\r\n", r4aLEDIntensity);
+    }
+}
+
+//*********************************************************************
+// Set the LED intensity
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuIntensity(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    uint8_t intensity;
+    int values;
+
+    if (r4aLEDMenuGetIntensity(menuEntry, command, &values, &intensity))
+    {
+        r4aLEDSetIntensity(intensity);
+        r4aLEDUpdate(true);
+    }
+    else
+    {
+        if (display)
+            display->println("ERROR: Please specify an intensity value in the range of (0 - 255)");
+    }
+}
+
+//*********************************************************************
+// Turn off the LEDs
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuOff(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    r4aLEDsOff();
+    r4aLEDUpdate(true);
+}

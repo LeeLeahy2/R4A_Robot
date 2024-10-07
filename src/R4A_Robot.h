@@ -304,6 +304,72 @@ void r4aMenuBoolToggle(const R4A_MENU_ENTRY * menuEntry,
                        Print * display);
 
 //****************************************
+// LED Menu API
+//****************************************
+
+extern const R4A_MENU_ENTRY r4aLEDMenuTable[];
+#define R4A_LED_MENU_ENTRIES    5
+
+// Set the WS2812 LED color
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuColor3(const R4A_MENU_ENTRY * menuEntry,
+                      const char * command,
+                      Print * display);
+
+// Set the SK6812RGBW LED color
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuColor4(const R4A_MENU_ENTRY * menuEntry,
+                      const char * command,
+                      Print * display);
+
+// Display the LED status
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuDisplay(const R4A_MENU_ENTRY * menuEntry,
+                       const char * command,
+                       Print * display);
+
+// Display the help text with iii
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   align: Zero terminated string of spaces for alignment
+//   display: Device used for output
+void r4aLEDMenuHelpiii(const struct _R4A_MENU_ENTRY * menuEntry,
+                       const char * align,
+                       Print * display);
+
+// Display the help text with ll and cccccccc
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   align: Zero terminated string of spaces for alignment
+//   display: Device used for output
+void r4aLEDMenuHelpllcccc(const struct _R4A_MENU_ENTRY * menuEntry,
+                          const char * align,
+                          Print * display);
+
+// Set the LED intensity
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuIntensity(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
+
+// Turn off the LEDs
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aLEDMenuOff(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
+
+//****************************************
 // NTP API
 //****************************************
 
