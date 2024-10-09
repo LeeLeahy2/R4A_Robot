@@ -446,6 +446,43 @@ String * r4aReadLine(bool echo, String * buffer, HardwareSerial * port = &Serial
 String * r4aReadLine(bool echo, String * buffer, WiFiClient * port);
 
 //****************************************
+// Robot Challenge class
+//****************************************
+
+class R4A_ROBOT_CHALLENGE
+{
+  public:
+
+    const char * _name; // Name of the challenge
+    const uint32_t _duration; // Number of seconds to run the robot challenge
+
+    // Constructor
+    R4A_ROBOT_CHALLENGE(const char * name, uint32_t durationSec)
+        : _name{name}, _duration{durationSec}
+    {
+    }
+
+    // The robotRunning routine calls this routine to actually perform
+    // the challenge.  This routine typically reads a sensor and may
+    // optionally adjust the motors based upon the sensor reading.  The
+    // routine then must return.  The robot layer will call this routine
+    // multiple times during the robot operation.
+    virtual void challenge();
+
+    // The robotStart calls this routine before switching to the initial
+    // delay state.
+    virtual void init();
+
+    // The initial delay routine calls this routine just before calling
+    // the challenge routine for the first time.
+    virtual void start();
+
+    // The robotStop routine calls this routine to stop the motors and
+    // perform any other actions.
+    virtual void stop();
+};
+
+//****************************************
 // Serial API
 //****************************************
 
