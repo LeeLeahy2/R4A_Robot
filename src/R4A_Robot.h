@@ -15,7 +15,7 @@
 
 // External libraries
 #include <NTPClient.h>          // https://github.com/arduino-libraries/NTPClient
-#include <TimeLib.h>            // Built-in, format and parse time values
+#include <TimeLib.h>            // In Time library, format and parse time values
 
 //****************************************
 // Constants
