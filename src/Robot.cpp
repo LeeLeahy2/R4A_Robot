@@ -8,7 +8,6 @@
 #include "R4A_Robot.h"
 
 #define SWITCH_STATE(newState)      __atomic_exchange_1((uint8_t *)&_state, newState, 0)
-#define SWITCH_CHALLENGE(challenge) (R4A_ROBOT_CHALLENGE *)__atomic_exchange_4((intptr_t *)&_challenge, (intptr_t)challenge, 0)
 
 //*********************************************************************
 // Perform the initial delay
@@ -147,45 +146,46 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
     uint32_t milliseconds;
     uint32_t minutes;
     uint32_t seconds;
-    R4A_ROBOT_TIME_CALLBACK * state;
+    uint8_t state;
+    uint8_t previousState;
 
-    // Stop the robot just once by setting _state to nullptr
-    if (SWITCH_STATE(STATE_STOP))
+    // Stop the robot just once by setting _state to STATE_STOP
+    state = SWITCH_STATE(STATE_STOP);
+    if ((state == STATE_RUNNING) || (state == STATE_COUNT_DOWN))
     {
-        // Done with this challenge
-        challenge = SWITCH_CHALLENGE(nullptr);
-        if (challenge)
-        {
-            _stopMsec = currentMsec;
+        _stopMsec = currentMsec;
 
-            // Wait for the robotRunning (core 0 task) to be done
-            if (_core != xPortGetCoreID())
-                while (_busy)
-                {
-                }
-
-            // Call the challenge stop routine to stop the motors
-            challenge->stop();
-
-            // Display the runtime
-            if (display)
+        // Wait for the I2C bus to be free, robot._core 0 idle
+        if (_core != xPortGetCoreID())
+            while (_busy)
             {
-                // Split the runtime
-                milliseconds = currentMsec - _startMsec;
-                seconds = milliseconds / R4A_MILLISECONDS_IN_A_SECOND;
-                milliseconds -= seconds * R4A_MILLISECONDS_IN_A_SECOND;
-                minutes = seconds / R4A_SECONDS_IN_A_MINUTE;
-                seconds -= minutes * R4A_SECONDS_IN_A_MINUTE;
-                hours = minutes / R4A_MINUTES_IN_AN_HOUR;
-                minutes -= hours * R4A_MINUTES_IN_AN_HOUR;
-                display->printf("Stopped %s, runtime: %d:%02d:%02d.%03d\r\n",
-                                challenge->_name, hours, minutes, seconds, milliseconds);
             }
 
-            // Display the runtime
-            if (_displayTime)
-            _displayTime(_stopMsec - _startMsec);
+        // Call the challenge stop routine to stop the motors
+        challenge = (R4A_ROBOT_CHALLENGE *)_challenge;
+        challenge->stop();
+
+        // Display the runtime
+        if (display)
+        {
+            // Split the runtime
+            milliseconds = currentMsec - _startMsec;
+            seconds = milliseconds / R4A_MILLISECONDS_IN_A_SECOND;
+            milliseconds -= seconds * R4A_MILLISECONDS_IN_A_SECOND;
+            minutes = seconds / R4A_SECONDS_IN_A_MINUTE;
+            seconds -= minutes * R4A_SECONDS_IN_A_MINUTE;
+            hours = minutes / R4A_MINUTES_IN_AN_HOUR;
+            minutes -= hours * R4A_MINUTES_IN_AN_HOUR;
+            display->printf("Stopped %s, runtime: %d:%02d:%02d.%03d\r\n",
+                            challenge->_name, hours, minutes, seconds, milliseconds);
         }
+
+        // Display the runtime
+        if (_displayTime)
+        _displayTime(_stopMsec - _startMsec);
+
+        // Done with this challenge
+        _challenge = nullptr;
     }
 }
 
