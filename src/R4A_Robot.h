@@ -9,6 +9,7 @@
 #define __R4A_ROBOT_H__
 
 #include <Arduino.h>            // Built-in
+#include <base64.h>             // Built-in, needed for NTRIP Client credential encoding
 #include <esp32-hal-spi.h>      // Built-in
 #include <WiFi.h>               // Built-in
 #include <WiFiServer.h>         // Built-in
@@ -422,6 +423,200 @@ void r4aNtpUpdate(bool wifiConnected);
 //   timeZoneOffsetSeconds: Time zone offset from GMT in seconds
 //   displayInitialTime: Display the time once NTP gets the time
 void r4aNtpSetup(long timeZoneOffsetSeconds, bool displayInitialTime);
+
+//****************************************
+// NTRIP Client
+//****************************************
+
+// Size of the credentials buffer in bytes
+#define R4A_CREDENTIALS_BUFFER_SIZE             512
+
+// Size of the response buffer
+#define R4A_NTRIP_CLIENT_RESPONSE_BUFFER_SIZE   512
+
+#define R4A_NTRIP_CLIENT_RING_BUFFER_BYTES      8192 // Size of the ring buffer
+
+// Most incoming data is around 500 bytes but may be larger
+#define R4A_RTCM_DATA_SIZE                      (512 * 4)
+
+// NTRIP client server request buffer size
+#define R4A_SERVER_BUFFER_SIZE                  (CREDENTIALS_BUFFER_SIZE + 3)
+
+// NTRIP client connection delay before resetting the connect accempt counter
+#define R4A_NTRIP_CLIENT_CONNECTION_TIME        (5 * R4A_MILLISECONDS_IN_A_MINUTE)
+
+// Define the back-off intervals between connection attempts in milliseconds
+extern const uint32_t r4aNtripClientBbackoffIntervalMsec[];
+extern const int r4aNtripClientBbackoffCount;
+
+const char *const r4aNtripClientStateName[] = {"NTRIP_CLIENT_OFF",
+                                            "NTRIP_CLIENT_WAIT_FOR_WIFI",
+                                            "NTRIP_CLIENT_CONNECTING",
+                                            "NTRIP_CLIENT_WAIT_RESPONSE",
+                                            "NTRIP_CLIENT_HANDLE_RESPONSE",
+                                            "NTRIP_CLIENT_CONNECTED"};
+const int r4aNtripClientStateNameEntries = sizeof(r4aNtripClientStateName) / sizeof(r4aNtripClientStateName[0]);
+
+
+//----------------------------------------
+// Parameters
+//----------------------------------------
+
+extern const char * r4aNtripClientCasterHost;       // NTRIP caster host name
+extern const char * r4aNtripClientCasterMountPoint; // NTRIP caster mount point
+extern uint16_t r4aNtripClientCasterPort;           // Typically 2101
+extern const char * r4aNtripClientCasterUser;       // e-mail address
+extern const char * r4aNtripClientCasterUserPW;
+
+extern const char * r4aNtripClientCompany;      // "Company" for your robot
+
+extern volatile bool r4aNtripClientDebugRtcm;   // Display RTCM data
+extern volatile bool r4aNtripClientDebugState;  // Display NTRIP client state transitions
+
+extern volatile bool r4aNtripClientEnable;      // True enables the NTRIP client
+extern volatile bool r4aNtripClientForcedShutdown;  // Set true during fatal NTRIP errors
+
+extern const char * r4aNtripClientProduct;          // "Product" for your robot
+extern const char * r4aNtripClientProductVersion;   // "Version" of your robot
+
+extern uint32_t r4aNtripClientReceiveTimeout;   // mSec timeout for beginning of HTTP response from NTRIP caster
+extern uint32_t r4aNtripClientResponseDone;     // mSec timeout waiting for end of HTTP response from NTRIP caster
+extern uint32_t r4aNtripClientResponseTimeout;  // mSec timeout for RTCM data from NTRIP caster
+
+class R4A_NTRIP_CLIENT
+{
+  private:
+
+    //----------------------------------------
+    // Constants
+    //----------------------------------------
+
+    const int _minimumRxBytes = 32;       // Minimum number of bytes to process
+
+    // Define the NTRIP client states
+    enum NTRIPClientState
+    {
+        NTRIP_CLIENT_OFF = 0,           // NTRIP client disabled or missing parameters
+        NTRIP_CLIENT_WAIT_FOR_WIFI,     // Connecting to WiFi access point
+        NTRIP_CLIENT_CONNECTING,        // Attempting a connection to the NTRIP caster
+        NTRIP_CLIENT_WAIT_RESPONSE,     // Wait for a response from the NTRIP caster
+        NTRIP_CLIENT_HANDLE_RESPONSE,   // Process the response
+        NTRIP_CLIENT_CONNECTED,         // Connected to the NTRIP caster
+        // Insert new states here
+        NTRIP_CLIENT_STATE_MAX // Last entry in the state list
+    };
+
+    //----------------------------------------
+    // Locals
+    //----------------------------------------
+
+    // The network connection to the NTRIP caster to obtain RTCM data.
+    WiFiClient * _client;
+    volatile uint8_t _state;
+
+    // Throttle the time between connection attempts
+    uint32_t _connectionDelayMsec; // Delay before making the connection
+    int _connectionAttempts; // Count the number of connection attempts between restarts
+    int _connectionAttemptsTotal; // Count the number of connection attempts absolutely
+    bool _forcedShutdown;
+
+    // NTRIP client timer usage:
+    //  * Reconnection delay
+    //  * Measure the connection response time
+    //  * Receive NTRIP data timeout
+    uint32_t _timer;
+    uint32_t _startTime; // For calculating uptime
+
+    char _responseBuffer[R4A_NTRIP_CLIENT_RESPONSE_BUFFER_SIZE];
+    int _responseLength;
+
+    // Ring buffer for NTRIP correction data
+    volatile int _rbHead;  // RX data offset in ring buffer to add data
+    volatile int _rbTail;  // GNSS offset in ring buffer to remove data
+    uint8_t _ringBuffer[R4A_NTRIP_CLIENT_RING_BUFFER_BYTES];
+    uint8_t _i2cTransactionSize;
+
+  public:
+
+    // Constructor
+    R4A_NTRIP_CLIENT()
+        : _client{nullptr},
+          _state{NTRIP_CLIENT_OFF},
+          _connectionDelayMsec{r4aNtripClientBbackoffIntervalMsec[0]},
+          _connectionAttempts{0},
+          _connectionAttemptsTotal{0},
+          _forcedShutdown{false},
+          _timer{0},
+          _startTime{0},
+          _responseLength{0},
+          _rbHead{0},
+          _rbTail{0},
+          _i2cTransactionSize{0}
+    {
+    };
+
+    // Attempt to connect to the NTRIP caster
+    bool connect();
+
+    // Determine if another connection is possible or if the limit has been reached
+    bool connectLimitReached();
+
+    void displayResponse(Print * display, char * response, int bytesRead);
+
+    // NTRIP Client was turned off due to an error. Don't allow restart!
+    void forceShutdown();
+
+    // Get the device for debug output
+    virtual Print * getSerial();
+
+    // Get the I2C bus transaction size
+    virtual uint8_t i2cTransactionSize();
+
+    // Print the NTRIP client state summary
+    void printStateSummary(Print * display);
+
+    // Print the NTRIP Client status
+    void printStatus(Print * display);
+
+    // Send data to the GNSS radio
+    virtual int pushRawData(uint8_t * buffer, int bytesToPush, Print * display);
+
+    // Add data to the ring buffer
+    int rbAddData(int length);
+
+    // Remove data from the ring buffer
+    int rbRemoveData(Print * display);
+
+    // Read the response from the NTRIP client
+    void response(Print *display, int length);
+
+    // Restart the NTRIP client
+    void restart();
+
+    // Update the state of the NTRIP client state machine
+    void setState(uint8_t newState);
+
+    // Start the NTRIP client
+    void start();
+
+    // Shutdown or restart the NTRIP client
+    bool stop(bool shutdown);
+
+    // Check for the arrival of any correction data. Push it to the GNSS.
+    // Stop task if the connection has dropped or if we receive no data for
+    // _receeiveTimeout
+    void update(bool wifiConnected);
+
+    // Verify the NTRIP client tables
+    void validateTables();
+};
+
+//****************************************
+// NTRIP Client Menu API
+//****************************************
+
+extern const R4A_MENU_ENTRY r4aNtripClientMenuTable[];
+#define R4A_NTRIP_CLIENT_MENU_ENTRIES   5   // NTRIP client menu table entries
 
 //****************************************
 // ReadLine API
