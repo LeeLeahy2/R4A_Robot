@@ -304,12 +304,21 @@ void r4aMenuBoolToggle(const R4A_MENU_ENTRY * menuEntry,
                        const char * command,
                        Print * display);
 
+// Display the menu item with a suffix and help text
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   align: Zero terminated string of spaces for alignment
+//   display: Device used for output
+void r4aMenuHelpSuffix(const struct _R4A_MENU_ENTRY * menuEntry,
+                       const char * align,
+                       Print * display);
+
 //****************************************
 // LED Menu API
 //****************************************
 
 extern const R4A_MENU_ENTRY r4aLEDMenuTable[];
-#define R4A_LED_MENU_ENTRIES    5
+#define R4A_LED_MENU_ENTRIES    6
 
 // Set the WS2812 LED color
 // Inputs:
@@ -343,6 +352,7 @@ void r4aLEDMenuDisplay(const R4A_MENU_ENTRY * menuEntry,
 //   menuEntry: Address of the object describing the menu entry
 //   align: Zero terminated string of spaces for alignment
 //   display: Device used for output
+[[deprecated("Use r4aMenuHelpSuffix instead.")]]
 void r4aLEDMenuHelpiii(const struct _R4A_MENU_ENTRY * menuEntry,
                        const char * align,
                        Print * display);
@@ -352,6 +362,7 @@ void r4aLEDMenuHelpiii(const struct _R4A_MENU_ENTRY * menuEntry,
 //   menuEntry: Address of the object describing the menu entry
 //   align: Zero terminated string of spaces for alignment
 //   display: Device used for output
+[[deprecated("Use r4aMenuHelpSuffix instead.")]]
 void r4aLEDMenuHelpllcccc(const struct _R4A_MENU_ENTRY * menuEntry,
                           const char * align,
                           Print * display);

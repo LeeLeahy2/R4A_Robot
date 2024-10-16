@@ -117,7 +117,7 @@ bool R4A_MENU::process(const char * command,
             menuEnd = &menuEntry[_menu->menuEntryCount];
             while (menuEntry < menuEnd)
             {
-                length = strlen(menuEntry->command) + menuEntry->align;
+                length = strlen(menuEntry->command) + menuEntry->align + 1;
                 if (maxLength < length)
                     maxLength = length;
                 menuEntry++;
@@ -133,7 +133,8 @@ bool R4A_MENU::process(const char * command,
             if (_alignCommands)
             {
                 align = String("");
-                length = strlen(menuEntry->command) + menuEntry->align;
+                length = strlen(menuEntry->command) + menuEntry->align
+                       + (menuEntry->align ? 1 : 0);
                 spaceCount = strlen(spaces);
                 alignSpaces = maxLength - length;
                 while (alignSpaces > 0)
@@ -194,4 +195,22 @@ void r4aMenuBoolToggle(const R4A_MENU_ENTRY * menuEntry, const char * command, P
 {
     bool * value = (bool *)menuEntry->menuParameter;
     *value ^= 1;
+}
+
+//*********************************************************************
+// Display the menu item with a suffix and help text.  The suffix is
+// specified as the menu parameter.
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   align: Zero terminated string of spaces for alignment
+//   display: Device used for output
+void r4aMenuHelpSuffix(const struct _R4A_MENU_ENTRY * menuEntry,
+                       const char * align,
+                       Print * display)
+{
+    display->printf("%s %s: %s%s\r\n",
+                    menuEntry->command,
+                    (const char *)menuEntry->menuParameter,
+                    align,
+                    menuEntry->helpText);
 }
