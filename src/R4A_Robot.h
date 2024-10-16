@@ -304,6 +304,13 @@ void r4aMenuBoolToggle(const R4A_MENU_ENTRY * menuEntry,
                        const char * command,
                        Print * display);
 
+// Get the string of parameters
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+String r4aMenuGetParameters(const struct _R4A_MENU_ENTRY * menuEntry,
+                            const char * command);
+
 // Display the menu item with a suffix and help text
 // Inputs:
 //   menuEntry: Address of the object describing the menu entry

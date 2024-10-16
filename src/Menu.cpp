@@ -198,6 +198,19 @@ void r4aMenuBoolToggle(const R4A_MENU_ENTRY * menuEntry, const char * command, P
 }
 
 //*********************************************************************
+// Get the string of parameters
+String r4aMenuGetParameters(const struct _R4A_MENU_ENTRY * menuEntry,
+                            const char * command)
+{
+    // Get the parameter name
+    String line = String(&command[strlen(menuEntry->command)]);
+
+    // Strip white space from the beginning and the end of the name
+    line.trim();
+    return line;
+}
+
+//*********************************************************************
 // Display the menu item with a suffix and help text.  The suffix is
 // specified as the menu parameter.
 // Inputs:

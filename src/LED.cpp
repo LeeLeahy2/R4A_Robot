@@ -448,10 +448,7 @@ bool r4aLEDMenuGetIntensity(const R4A_MENU_ENTRY * menuEntry,
     int i;
 
     // Get the parameter name
-    String line = String(&command[strlen(menuEntry->command)]);
-
-    // Strip white space from the beginning of the name
-    line.trim();
+    String line = r4aMenuGetParameters(menuEntry, command);
 
     // Get the value
     *values = sscanf(line.c_str(), "%d", &i);
@@ -477,10 +474,7 @@ bool r4aLEDMenuGetLedColor(const R4A_MENU_ENTRY * menuEntry,
     int l;
 
     // Get the parameter name
-    String line = String(&command[strlen(menuEntry->command)]);
-
-    // Strip white space from the beginning of the name
-    line.trim();
+    String line = r4aMenuGetParameters(menuEntry, command);
 
     // Get the values
     *values = sscanf(line.c_str(), "%d %x", &l, &c);
