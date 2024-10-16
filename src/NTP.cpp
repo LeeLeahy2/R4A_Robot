@@ -172,16 +172,59 @@ void r4aNtpSetState(uint8_t newState)
 // Set the time zone
 void r4aNtpSetTimeZone(long timeZoneOffsetSeconds)
 {
+    long hours;
+    long minutes;
+    long seconds;
+
+    // Set the combined offset
     r4aNtpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
+
+    // Split up the time zone offset
+    seconds = timeZoneOffsetSeconds;
+    hours = timeZoneOffsetSeconds / R4A_SECONDS_IN_AN_HOUR;
+    seconds -= hours * R4A_SECONDS_IN_AN_HOUR;
+    hours %= R4A_HOURS_IN_A_DAY;
+    minutes = timeZoneOffsetSeconds / R4A_SECONDS_IN_A_MINUTE;
+    seconds -= minutes * R4A_SECONDS_IN_A_MINUTE;
+    minutes %= R4A_SECONDS_IN_AN_HOUR;
+    seconds %= R4A_SECONDS_IN_A_MINUTE;
+
+    // Update the values
+    r4aTimeZoneHours = (char)hours;
+    r4aTimeZoneMinutes = (char)minutes;
+    r4aTimeZoneSeconds = (char)seconds;
+
+    // Tell the NTP layer about the time zone offset
     if (r4aNtpIsTimeValid())
         r4aNtpClient->setTimeOffset(timeZoneOffsetSeconds);
 }
 
 //*********************************************************************
 // Initialize the NTP server
+void r4aNtpSetup(bool displayInitialTime)
+{
+    long timeZoneOffset;
+
+    // Build the combined time zone offset
+    timeZoneOffset = r4aTimeZoneHours;
+    timeZoneOffset *= R4A_MINUTES_IN_AN_HOUR;
+    timeZoneOffset += r4aTimeZoneMinutes;
+    timeZoneOffset *= R4A_SECONDS_IN_A_MINUTE;
+    timeZoneOffset += r4aTimeZoneSeconds;
+    r4aNtpTimeZoneOffsetSeconds = timeZoneOffset;
+
+    // Finish the setup
+    r4aNtpDisplayInitialTime = displayInitialTime;
+}
+
+//*********************************************************************
+// Initialize the NTP server
 void r4aNtpSetup(long timeZoneOffsetSeconds, bool displayInitialTime)
 {
-    r4aNtpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
+    // Update the time zone
+    r4aNtpSetTimeZone(timeZoneOffsetSeconds);
+
+    // Finish the setup
     r4aNtpDisplayInitialTime = displayInitialTime;
 }
 

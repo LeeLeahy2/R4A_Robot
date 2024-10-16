@@ -413,16 +413,21 @@ String r4aNtpGetTime24(uint32_t seconds);
 //   Returns true when the time and date are valid
 bool r4aNtpIsTimeValid();
 
-// Update the NTP client and system time
+// Initialize the NTP server
 // Inputs:
-//   wifiConnected: True when WiFi is connected to an access point, false otherwise
-void r4aNtpUpdate(bool wifiConnected);
+//   displayInitialTime: Display the time once NTP gets the time
+void r4aNtpSetup(bool displayInitialTime);
 
 // Initialize the NTP server
 // Inputs:
 //   timeZoneOffsetSeconds: Time zone offset from GMT in seconds
 //   displayInitialTime: Display the time once NTP gets the time
 void r4aNtpSetup(long timeZoneOffsetSeconds, bool displayInitialTime);
+
+// Update the NTP client and system time
+// Inputs:
+//   wifiConnected: True when WiFi is connected to an access point, false otherwise
+void r4aNtpUpdate(bool wifiConnected);
 
 //****************************************
 // NTRIP Client
@@ -1050,5 +1055,13 @@ public:
 };
 
 extern class R4A_TELNET_SERVER telnet;  // Server providing telnet access
+
+//****************************************
+// Time Zone API
+//****************************************
+
+extern char r4aTimeZoneHours;
+extern char r4aTimeZoneMinutes;
+extern char r4aTimeZoneSeconds;
 
 #endif  // __R4A_ROBOT_H__
