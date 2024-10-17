@@ -184,15 +184,15 @@ void r4aNtpSetTimeZone(long timeZoneOffsetSeconds)
     hours = timeZoneOffsetSeconds / R4A_SECONDS_IN_AN_HOUR;
     seconds -= hours * R4A_SECONDS_IN_AN_HOUR;
     hours %= R4A_HOURS_IN_A_DAY;
-    minutes = timeZoneOffsetSeconds / R4A_SECONDS_IN_A_MINUTE;
+    minutes = seconds / R4A_SECONDS_IN_A_MINUTE;
     seconds -= minutes * R4A_SECONDS_IN_A_MINUTE;
     minutes %= R4A_SECONDS_IN_AN_HOUR;
     seconds %= R4A_SECONDS_IN_A_MINUTE;
 
     // Update the values
-    r4aTimeZoneHours = (char)hours;
-    r4aTimeZoneMinutes = (char)minutes;
-    r4aTimeZoneSeconds = (char)seconds;
+    r4aTimeZoneHours = (int8_t)hours;
+    r4aTimeZoneMinutes = (int8_t)minutes;
+    r4aTimeZoneSeconds = (int8_t)seconds;
 
     // Tell the NTP layer about the time zone offset
     if (r4aNtpIsTimeValid())

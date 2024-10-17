@@ -1078,8 +1078,8 @@ extern class R4A_TELNET_SERVER telnet;  // Server providing telnet access
 // Time Zone API
 //****************************************
 
-extern char r4aTimeZoneHours;
-extern char r4aTimeZoneMinutes;
-extern char r4aTimeZoneSeconds;
+extern int8_t r4aTimeZoneHours;
+extern int8_t r4aTimeZoneMinutes;
+extern int8_t r4aTimeZoneSeconds;
 
 #endif  // __R4A_ROBOT_H__
