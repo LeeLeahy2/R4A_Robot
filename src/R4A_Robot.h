@@ -24,6 +24,7 @@
 
 // Define distance constants
 #define R4A_MILLIMETERS_PER_METER       ((double)1000.)
+#define R4A_CENTIMETERS_PER_METER       ((double)100.)
 #define R4A_METERS_PER_KILOMETER        ((double)1000.)
 #define R4A_MILLIMETERS_PER_KILOMETER   (MILLIMETERS_PER_METER * METERS_PER_KILOMETER)
 
@@ -31,6 +32,7 @@
 #define R4A_FEET_PER_MILE               ((double)5280.)
 
 #define R4A_MILLIMETERS_PER_INCH        ((double)25.4)
+#define R4A_CENTIMETERS_PER_INCH        ((double)2.54)
 #define R4A_MILLIMETERS_PER_FOOT        ((double)(R4A_MILLIMETERS_PER_INCH * R4A_INCHES_PER_FOOT))
 
 // Define time constants
@@ -46,6 +48,11 @@
 #define R4A_SECONDS_IN_A_DAY            (R4A_HOURS_IN_A_DAY * R4A_SECONDS_IN_AN_HOUR)
 
 #define R4A_MINUTES_IN_A_DAY            (R4A_HOURS_IN_A_DAY * R4A_MINUTES_IN_AN_HOUR)
+
+// Earth radius: https://www.google.com/search?q=earth+radius
+#define R4A_EARTH_AVE_RADIUS_KM         6371
+#define R4A_EARTH_EQUATORIAL_RADIUS_KM  6378
+#define R4A_EARTH_POLE_RADIUS_KM        6357
 
 //****************************************
 // Forward Declarations
