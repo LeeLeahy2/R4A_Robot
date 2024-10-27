@@ -92,6 +92,57 @@ void r4aDumpBuffer(uint32_t offset,
                    Print * display = &Serial);
 
 //****************************************
+// GNSS API
+//****************************************
+
+// Earth radius in meters
+#define R4A_GNSS_EARTH_AVE_RADIUS_MPD   (R4A_EARTH_AVE_RADIUS_KM        \
+                                         * R4A_METERS_PER_KILOMETER     \
+                                         / 360)
+
+#define R4A_GNSS_EARTH_LAT_RADIUS_MPD   (R4A_EARTH_POLE_RADIUS_KM       \
+                                         * R4A_METERS_PER_KILOMETER     \
+                                         / 360)
+
+#define R4A_GNSS_EARTH_LONG_RADIUS_MPD  (R4A_EARTH_EQUATORIAL_RADIUS_KM \
+                                       * R4A_METERS_PER_KILOMETER       \
+                                       / 360)
+
+// Earth radius in inches
+#define R4A_GNSS_EARTH_AVE_RADIUS_IPD   (R4A_GNSS_EARTH_AVE_RADIUS_MPD  \
+                                         * R4A_CENTIMETERS_PER_METER    \
+                                         / R4A_CENTIMETERS_PER_INCH)
+
+#define R4A_GNSS_EARTH_LAT_RADIUS_IPD   (R4A_GNSS_EARTH_LAT_RADIUS_MPD  \
+                                         * R4A_CENTIMETERS_PER_METER    \
+                                         / R4A_CENTIMETERS_PER_INCH)
+
+#define R4A_GNSS_EARTH_LONG_RADIUS_IPD  (R4A_GNSS_EARTH_LONG_RADIUS_MPD \
+                                       * R4A_CENTIMETERS_PER_METER      \
+                                       / R4A_CENTIMETERS_PER_INCH)
+
+// Degrees per meter
+#define R4A_GNSS_AVE_DPM    (360. / (R4A_EARTH_AVE_RADIUS_KM    \
+                                     * R4A_METERS_PER_KILOMETER))
+
+#define R4A_GNSS_LAT_DPM    (360. / (R4A_EARTH_POLE_RADIUS_KM   \
+                                     * R4A_METERS_PER_KILOMETER))
+
+#define R4A_GNSS_LONG_DPM   (360. / (R4A_EARTH_EQUATORIAL_RADIUS_KM \
+                                     * R4A_METERS_PER_KILOMETER))
+
+// Degrees per inch
+
+#define R4A_GNSS_AVE_DPI    (R4A_CENTIMETERS_PER_INCH / (R4A_GNSS_AVE_DPM   \
+                                                         * R4A_CENTIMETERS_PER_METER))
+
+#define R4A_GNSS_LAT_DPM    (R4A_CENTIMETERS_PER_INCH / (R4A_GNSS_LAT_DPM   \
+                                                         * R4A_CENTIMETERS_PER_METER))
+
+#define R4A_GNSS_LONG_DPM   (R4A_CENTIMETERS_PER_INCH / (R4A_GNSS_LONG_DPM  \
+                                                         * R4A_CENTIMETERS_PER_METER))
+
+//****************************************
 // LED API
 //****************************************
 
