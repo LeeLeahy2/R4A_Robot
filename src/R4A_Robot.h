@@ -906,6 +906,33 @@ int r4aStricmp(const char *str1, const char *str2);
 int r4aStrincmp(const char *str1, const char *str2, int length);
 
 //****************************************
+// Support API
+//****************************************
+
+// Get the parameter
+// Inputs:
+//   parameter: Address of address of a zero terminated string of characters
+// Outputs:
+//   Returns the address of the next parameter
+uint8_t * r4aSupportGetParameter(uint8_t ** parameter);
+
+// Remove white space before a parameter
+// Inputs:
+//   parameter: Address of a zero terminated string of characters containing
+//              leading white space and a parameter
+// Outputs:
+//   Returns the address of the parameter
+uint8_t * r4aSupportRemoveWhiteSpace(uint8_t * parameter);
+
+// Trim white space at the end of the parameter
+// Inputs:
+//   parameter: Address of a zero terminated string of characters containing
+//              leading white space and a parameter
+// Outputs:
+//   Returns the address of the parameter
+void r4aSupportTrimWhiteSpace(uint8_t * parameter);
+
+//****************************************
 // Telnet Client API
 //****************************************
 
