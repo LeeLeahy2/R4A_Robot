@@ -1179,4 +1179,21 @@ extern int8_t r4aTimeZoneHours;
 extern int8_t r4aTimeZoneMinutes;
 extern int8_t r4aTimeZoneSeconds;
 
+//****************************************
+// Waypoints API
+//****************************************
+
+// Determine if the waypoint was reached
+// Inputs:
+//   wpLatitude: Waypoint latitude
+//   wpLongitude: Wapoint longitude
+//   latitude: Current latitude
+//   longitude: Current longitude
+// Outputs:
+//   Returns true if the position is close enough to the waypoint
+bool r4aWaypointReached(double wpLatitude,
+                        double wpLongitude,
+                        double latitude,
+                        double longitude);
+
 #endif  // __R4A_ROBOT_H__
