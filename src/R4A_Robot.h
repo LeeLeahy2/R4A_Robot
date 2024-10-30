@@ -11,6 +11,7 @@
 #include <Arduino.h>            // Built-in
 #include <base64.h>             // Built-in, needed for NTRIP Client credential encoding
 #include <esp32-hal-spi.h>      // Built-in
+#include <math.h>               // Built-in
 #include <WiFi.h>               // Built-in
 #include <WiFiServer.h>         // Built-in
 
@@ -108,17 +109,24 @@ void r4aDumpBuffer(uint32_t offset,
                                        * R4A_METERS_PER_KILOMETER       \
                                        / 360)
 
+// Earth radius in centimeters
+#define R4A_GNSS_EARTH_AVE_RADIUS_CPD   (R4A_GNSS_EARTH_AVE_RADIUS_MPD  \
+                                         * R4A_CENTIMETERS_PER_METER)
+
+#define R4A_GNSS_EARTH_LAT_RADIUS_CPD   (R4A_GNSS_EARTH_LAT_RADIUS_MPD  \
+                                         * R4A_CENTIMETERS_PER_METER)
+
+#define R4A_GNSS_EARTH_LONG_RADIUS_CPD  (R4A_GNSS_EARTH_LONG_RADIUS_MPD \
+                                         * R4A_CENTIMETERS_PER_METER)
+
 // Earth radius in inches
-#define R4A_GNSS_EARTH_AVE_RADIUS_IPD   (R4A_GNSS_EARTH_AVE_RADIUS_MPD  \
-                                         * R4A_CENTIMETERS_PER_METER    \
+#define R4A_GNSS_EARTH_AVE_RADIUS_IPD   (R4A_GNSS_EARTH_AVE_RADIUS_CPD  \
                                          / R4A_CENTIMETERS_PER_INCH)
 
-#define R4A_GNSS_EARTH_LAT_RADIUS_IPD   (R4A_GNSS_EARTH_LAT_RADIUS_MPD  \
-                                         * R4A_CENTIMETERS_PER_METER    \
+#define R4A_GNSS_EARTH_LAT_RADIUS_IPD   (R4A_GNSS_EARTH_LAT_RADIUS_CPD  \
                                          / R4A_CENTIMETERS_PER_INCH)
 
-#define R4A_GNSS_EARTH_LONG_RADIUS_IPD  (R4A_GNSS_EARTH_LONG_RADIUS_MPD \
-                                       * R4A_CENTIMETERS_PER_METER      \
+#define R4A_GNSS_EARTH_LONG_RADIUS_IPD  (R4A_GNSS_EARTH_LONG_RADIUS_CPD \
                                        / R4A_CENTIMETERS_PER_INCH)
 
 // Degrees per meter
@@ -131,16 +139,20 @@ void r4aDumpBuffer(uint32_t offset,
 #define R4A_GNSS_LONG_DPM   (360. / (R4A_EARTH_EQUATORIAL_RADIUS_KM \
                                      * R4A_METERS_PER_KILOMETER))
 
+// Degrees per centimeter
+#define R4A_GNSS_AVE_DPC    (R4A_GNSS_AVE_DPM / R4A_CENTIMETERS_PER_METER)
+
+#define R4A_GNSS_LAT_DPC    (R4A_GNSS_LAT_DPM / R4A_CENTIMETERS_PER_METER)
+
+#define R4A_GNSS_LONG_DPC   (R4A_GNSS_LONG_DPM / R4A_CENTIMETERS_PER_METER)
+
 // Degrees per inch
 
-#define R4A_GNSS_AVE_DPI    (R4A_CENTIMETERS_PER_INCH / (R4A_GNSS_AVE_DPM   \
-                                                         * R4A_CENTIMETERS_PER_METER))
+#define R4A_GNSS_AVE_DPI    (R4A_GNSS_AVE_DPC * R4A_CENTIMETERS_PER_INCH)
 
-#define R4A_GNSS_LAT_DPM    (R4A_CENTIMETERS_PER_INCH / (R4A_GNSS_LAT_DPM   \
-                                                         * R4A_CENTIMETERS_PER_METER))
+#define R4A_GNSS_LAT_DPM    (R4A_GNSS_LAT_DPC * R4A_CENTIMETERS_PER_INCH)
 
-#define R4A_GNSS_LONG_DPM   (R4A_CENTIMETERS_PER_INCH / (R4A_GNSS_LONG_DPM  \
-                                                         * R4A_CENTIMETERS_PER_METER))
+#define R4A_GNSS_LONG_DPM   (R4A_GNSS_LONG_DPC * R4A_CENTIMETERS_PER_INCH)
 
 //****************************************
 // LED API
