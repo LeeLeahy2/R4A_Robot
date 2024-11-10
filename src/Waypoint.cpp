@@ -24,8 +24,8 @@ bool r4aWaypointReached(double wpLatitude,
     double longInches;
 
     // Compute the offset in inches
-    latInches = abs(latitude - wpLatitude) * R4A_GNSS_EARTH_LAT_RADIUS_IPD;
-    longInches = abs(longitude - wpLongitude) * R4A_GNSS_EARTH_LONG_RADIUS_IPD;
+    latInches = abs(latitude - wpLatitude) * 2. * M_PI * R4A_GNSS_EARTH_LAT_RADIUS_IPD;
+    longInches = abs(longitude - wpLongitude) * 2. * M_PI * R4A_GNSS_EARTH_LONG_RADIUS_IPD;
 
     // Determine if the waypoint was reached
     return (((latInches * latInches) + (longInches * longInches))
