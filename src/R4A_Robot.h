@@ -1262,17 +1262,25 @@ extern int8_t r4aTimeZoneSeconds;
 // Waypoints API
 //****************************************
 
+typedef struct _R4A_LAT_LONG_POINT
+{
+    double latitude;
+    double longitude;
+    double hpa;
+    uint8_t siv;
+} R4A_LAT_LONG_POINT;
+
+typedef struct _R4A_LAT_LONG_POINT_PAIR
+{
+    R4A_LAT_LONG_POINT current;
+    R4A_LAT_LONG_POINT previous;
+} R4A_LAT_LONG_POINT_PAIR;
+
 // Determine if the waypoint was reached
 // Inputs:
-//   wpLatitude: Waypoint latitude
-//   wpLongitude: Wapoint longitude
-//   latitude: Current latitude
-//   longitude: Current longitude
+//   point: Address of R4A_LAT_LONG_POINT_PAIR object
 // Outputs:
 //   Returns true if the position is close enough to the waypoint
-bool r4aWaypointReached(double wpLatitude,
-                        double wpLongitude,
-                        double latitude,
-                        double longitude);
+bool r4aWaypointReached(R4A_LAT_LONG_POINT_PAIR * point);
 
 #endif  // __R4A_ROBOT_H__
