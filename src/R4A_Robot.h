@@ -1276,6 +1276,45 @@ typedef struct _R4A_LAT_LONG_POINT_PAIR
     R4A_LAT_LONG_POINT previous;
 } R4A_LAT_LONG_POINT_PAIR;
 
+typedef struct _R4A_HEADING
+{
+    // Inputs
+    R4A_LAT_LONG_POINT_PAIR * location;
+
+    // Outputs
+    R4A_LAT_LONG_POINT delta;
+
+    char eastWest;
+    int eastWestFeet;
+    double eastWestInches;
+    double eastWestInchesTotal;
+
+    char northSouth;
+    int northSouthFeet;
+    double northSouthInches;
+    double northSouthInchesTotal;
+
+    int feet;
+    double inches;
+    double inchesTotal;
+    double radians;
+    double degrees;
+} R4A_HEADING;
+
+// Compute the heading
+// Inputs:
+//   heading: Address of R4A_HEADING object
+void r4aComputeHeading(R4A_HEADING * heading);
+
+// Display the heading
+// Inputs:
+//   heading: Address of a R4A_HEADING object
+//   text: Zero terminated line of text to display
+//   display: Address of a Print object to display the output
+void r4aDisplayHeading(R4A_HEADING * heading,
+                       const char * text,
+                       Print * display = &Serial);
+
 // Determine if the waypoint was reached
 // Inputs:
 //   point: Address of R4A_LAT_LONG_POINT_PAIR object
