@@ -1301,9 +1301,17 @@ typedef struct _R4A_HEADING
     double degrees;
 } R4A_HEADING;
 
+// Determine the central angle between two points on a sphere
+// See https://en.wikipedia.org/wiki/Haversine_formula
+// Inputs:
+//   point: Address of an R4A_LAT_LONG_POINT_PAIR object
+// Outputs:
+//   Returns the central angle between the two points on the sphere
+double r4aCentralAngle(R4A_LAT_LONG_POINT_PAIR * point);
+
 // Compute the heading
 // Inputs:
-//   heading: Address of R4A_HEADING object
+//   heading: Address of a R4A_HEADING object
 void r4aComputeHeading(R4A_HEADING * heading);
 
 // Display the heading
@@ -1314,6 +1322,56 @@ void r4aComputeHeading(R4A_HEADING * heading);
 void r4aDisplayHeading(R4A_HEADING * heading,
                        const char * text,
                        Print * display = &Serial);
+
+// Determine the ellipsoidal flattening
+// See https://en.wikipedia.org/wiki/Flattening
+// Inputs:
+//   longRadius: The longer of the two radii of the ellipsoid
+//   shortRadius: The shorter of the two radii of the ellipsoid
+// Outputs:
+//   Returns the flattening value
+double r4aFlatening(double longRadius, double shortRadius);
+
+// Determine the haversine distance between two points on a sphere
+// See https://en.wikipedia.org/wiki/Haversine_formula
+// Inputs:
+//   radius: Radius of the sphere
+//   point: Address of an R4A_LAT_LONG_POINT_PAIR object
+// Outputs:
+//   Returns the great circle distance between the two points on the sphere
+double r4aHaversineDistance(double radius, R4A_LAT_LONG_POINT_PAIR * point);
+
+// Determine the Lambert distance between two points on an ellipsoid
+// See https://www.calculator.net/distance-calculator.html
+// Inputs:
+//   longRadius: Longer radius of the ellipsoid
+//   shortRadius: Shorter radius of the ellipsoid
+//   point: Address of an R4A_LAT_LONG_POINT_PAIR object
+// Outputs:
+//   Returns the distance between the two points on the ellipsoid.  Note
+//   that the units of the large and small radii must match!
+double r4aLambertDistance(double longRadius,
+                          double shortRadius,
+                          R4A_LAT_LONG_POINT_PAIR * point);
+
+// Determine the haversine distance between two points on a earth
+// See https://en.wikipedia.org/wiki/Haversine_formula
+// Inputs:
+//   radius: Radius of the sphere
+//   point: Address of an R4A_LAT_LONG_POINT_PAIR object
+// Outputs:
+//   Returns the great circle distance between the two points on the earth
+//   in kilometers
+double r4aWaypointHaversineDistance(R4A_LAT_LONG_POINT_PAIR * point);
+
+// Determine the Lambert distance between two points on a earth
+// See https://www.calculator.net/distance-calculator.html
+// Inputs:
+//   point: Address of an R4A_LAT_LONG_POINT_PAIR object
+// Outputs:
+//   Returns the ellipsoidal distance between the two points on the earth
+//   in kilometers
+double r4aWaypointLambertDistance(R4A_LAT_LONG_POINT_PAIR * point);
 
 // Determine if the waypoint was reached
 // Inputs:
