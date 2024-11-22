@@ -43,7 +43,7 @@ void setup()
 }
 
 //*********************************************************************
-// Idle loop the application
+// Idle loop for the application
 void loop()
 {
     // Process the serial commands
