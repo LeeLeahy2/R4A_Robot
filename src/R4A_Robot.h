@@ -303,6 +303,7 @@ class R4A_MENU
 {
   private:
 
+    bool _debug;                     // Set true to enable debugging
     const R4A_MENU_TABLE * _menu;            // Current menu to display and use
     const R4A_MENU_TABLE * const _menuTable; // Address of all menu descriptions
     const int _menuTableEntries;             // Number of entries in the menu table
@@ -332,13 +333,19 @@ class R4A_MENU
             bool blankLineAfterMenuHeader = false,
             bool alignCommands = true,
             bool blankLineAfterMenu = false)
-        : _menuTable{menuTable}, _menuTableEntries{menuEntries},
+        : _debug{false}, _menu{nullptr}, _menuTable{menuTable},
+          _menuTableEntries{menuEntries},
           _blankLineBeforePreMenu{blankLineBeforePreMenu},
           _blankLineBeforeMenuHeader{blankLineBeforeMenuHeader},
           _blankLineAfterMenuHeader{blankLineAfterMenuHeader},
           _alignCommands{alignCommands}, _blankLineAfterMenu{blankLineAfterMenu}
     {
     }
+
+    // Enable or disable debugging
+    // Inputs:
+    //   enable: Set true to enable debugging, false disables debugging
+    void debug(bool enable);
 
     // Display the menu object contents
     // Inputs:
