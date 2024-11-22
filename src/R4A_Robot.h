@@ -12,7 +12,9 @@
 #include <base64.h>             // Built-in, needed for NTRIP Client credential encoding
 #include <esp32-hal-spi.h>      // Built-in
 #include <math.h>               // Built-in
+#include <Network.h>            // Built-in
 #include <WiFi.h>               // Built-in
+#include <WiFiMulti.h>          // Built-in
 #include <WiFiServer.h>         // Built-in
 
 // External libraries
@@ -54,12 +56,6 @@
 #define R4A_EARTH_AVE_RADIUS_KM         6371
 #define R4A_EARTH_EQUATORIAL_RADIUS_KM  6378
 #define R4A_EARTH_POLE_RADIUS_KM        6357
-
-//****************************************
-// Forward Declarations
-//****************************************
-
-class R4A_TELNET_SERVER;
 
 //****************************************
 // Command Processor API
@@ -611,7 +607,7 @@ class R4A_NTRIP_CLIENT
     //----------------------------------------
 
     // The network connection to the NTRIP caster to obtain RTCM data.
-    WiFiClient * _client;
+    NetworkClient * _client;
     volatile uint8_t _state;
 
     // Throttle the time between connection attempts
@@ -733,12 +729,12 @@ String * r4aReadLine(bool echo, String * buffer, HardwareSerial * port = &Serial
 
 // Read a line of input from a WiFi client into a character array
 // Inputs:
-//   port: Address of a WiFiClient port structure
+//   port: Address of a NetworkClient port structure
 //   echo: Specify true to enable echo of input characters and false otherwise
 //   buffer: Address of a string that contains the input line
 // Outputs:
 //   nullptr when the line is not complete
-String * r4aReadLine(bool echo, String * buffer, WiFiClient * port);
+String * r4aReadLine(bool echo, String * buffer, NetworkClient * port);
 
 //****************************************
 // Robot Challenge class
@@ -1006,22 +1002,86 @@ void r4aSupportTrimWhiteSpace(uint8_t * parameter);
 // Telnet Client API
 //****************************************
 
-// Forward declaration
-class R4A_TELNET_SERVER;
+// Process input characters from the telnet client
+// Inputs:
+//   client: Address of a NetworkClient object
+//   parameter: Address of object allocated by r4aTelnetClientBegin
+// Outputs:
+//   Returns true if the client is done (requests exit)
+typedef bool (* R4A_TELNET_CLIENT_PROCESS_INPUT)(NetworkClient * client, void * parameter);
+
+// Finish creating the network client
+// Inputs:
+//   client: Address of a NetworkClient object
+//   parameter: Buffer to receive the address of an object allocated by
+//              this routine
+// Outputs:
+//   Returns true if the routine was successful and false upon failure.
+typedef bool (* R4A_TELNET_CONTEXT_CREATE)(NetworkClient * client, void ** parameter);
+
+// Clean up after the parameter object returned by r4aTelnetClientBegin
+// Inputs:
+//   parameter: Address of object allocated by r4aTelnetClientBegin
+typedef void (* R4A_TELNET_CONTEXT_DELETE)(void * parameter);
+
+// Telnet client
+class R4A_TELNET_CLIENT
+{
+  private:
+
+    NetworkClient _client;
+    String _command;
+    R4A_TELNET_CONTEXT_CREATE _contextCreate;
+    void * _contextData;
+    R4A_TELNET_CONTEXT_DELETE _contextDelete;
+    R4A_TELNET_CLIENT_PROCESS_INPUT _processInput;
+
+  public:
+
+    // Constructor: Initialize the telnet client object
+    // Inputs:
+    //   client: Address of a NetworkClient object
+    //   processInput: Address of a function to process input characters
+    //   contextCreate: Address of a function to create the telnet context
+    //   contextDelete: Address of a function to delete the telnet context
+    R4A_TELNET_CLIENT(NetworkClient client,
+                      R4A_TELNET_CLIENT_PROCESS_INPUT processInput,
+                      R4A_TELNET_CONTEXT_CREATE contextCreate = nullptr,
+                      R4A_TELNET_CONTEXT_DELETE contextDelete = nullptr);
+
+    // Destructor: Cleanup the things allocated in the constructor
+    ~R4A_TELNET_CLIENT();
+
+    // Break the client connection
+    void disconnect();
+
+    // Process the incoming telnet client data
+    // Outputs:
+    //   Returns true when the client wants to exit, false to continue
+    //   processing input.
+    bool processInput();
+
+    // Get the IP address
+    // Outputs:
+    //   Returns the IP address of the remote telnet client.
+    IPAddress remoteIP();
+
+    // Get the port number
+    // Outputs:
+    //   Returns the port number used by the remote telnet client.
+    uint16_t remotePort();
+};
 
 //*********************************************************************
-// Telnet client
-class R4A_TELNET_CLIENT : public WiFiClient
+// Data associated with the telnet connection
+class R4A_TELNET_CONTEXT
 {
-private:
-    R4A_TELNET_CLIENT * _nextClient; // Next client in the server's client list
-    String _command; // User command received via telnet
-    R4A_MENU _menu;  // Strcture describing the menu system
-
-    // Allow the server to access the command string
-    friend R4A_TELNET_SERVER;
-
 public:
+
+    String _command; // User command received via telnet
+    bool _displayOptions;
+    bool _echo;
+    R4A_MENU _menu;  // Strcture describing the menu system
 
     // Constructor
     // Inputs:
@@ -1033,150 +1093,127 @@ public:
     //   blankLineAfterMenuHeader: Display a blank line after the menu header
     //   alignCommands: Align the commands
     //   blankLineAfterMenu: Display a blank line after the menu
-    R4A_TELNET_CLIENT(const R4A_MENU_TABLE * menuTable,
-                      int menuTableEntries,
-                      bool blankLineBeforePreMenu = true,
-                      bool blankLineBeforeMenuHeader = true,
-                      bool blankLineAfterMenuHeader = false,
-                      bool alignCommands = true,
-                      bool blankLineAfterMenu = false)
-        : _menu{R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
+    R4A_TELNET_CONTEXT(const R4A_MENU_TABLE * menuTable,
+                       int menuTableEntries,
+                       bool displayOptions = false,
+                       bool echo = false,
+                       bool blankLineBeforePreMenu = true,
+                       bool blankLineBeforeMenuHeader = true,
+                       bool blankLineAfterMenuHeader = false,
+                       bool alignCommands = true,
+                       bool blankLineAfterMenu = false)
+        : _command{String("")}, _displayOptions{displayOptions}, _echo{echo},
+          _menu{R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
                 blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
                 alignCommands, blankLineAfterMenu)}
     {
     }
-
-    // Allow the R4A_TELNET_SERVER access to the private members
-    friend class R4A_TELNET_SERVER;
 };
 
-//****************************************
-// Telnet Menu API
-//****************************************
-
-extern const R4A_MENU_ENTRY r4aTelnetMenuTable[]; // Telnet menu table
-#define R4A_TELNET_MENU_ENTRIES       4           // Telnet menu table entries
-
-// Display the telnet clients
+// Finish creating the network client
 // Inputs:
-//   menuEntry: Address of the object describing the menu entry
-//   command: Zero terminated command string
-//   display: Device used for output
-void r4aTelnetMenuClients(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
+//   client: Address of a NetworkClient object
+//   menuTable: Address of table containing the menu descriptions, the
+//              main menu must be the first entry in the table.
+//   menuEntries: Number of entries in the menu table
+//   contextData: Buffer to receive the address of an object allocated by
+//                this routine
+// Outputs:
+//   Returns true if the routine was successful and false upon failure.
+bool r4aTelnetContextCreate(NetworkClient * client,
+                            const R4A_MENU_TABLE * menuTable,
+                            int menuTableEntries,
+                            void ** contextData);
 
-// Display the telnet options
+// Clean up after the parameter object returned by r4aTelnetClientBegin
 // Inputs:
-//   menuEntry: Address of the object describing the menu entry
-//   command: Zero terminated command string
-//   display: Device used for output
-void r4aTelnetMenuOptions(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
+//   contextData: Address of object allocated by r4aTelnetClientBegin
+void r4aTelnetContextDelete(void * contextData);
 
-// Display the telnet options
+// Process input from the telnet client
 // Inputs:
-//   menuEntry: Address of the object describing the menu entry
-//   command: Zero terminated command string
-//   display: Device used for output
-void r4aTelnetMenuState(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
-
-// Display the telnet state
-// Inputs:
-//   display: Device used for output
-void r4aTelnetMenuStateDisplay(Print * display);
+//   client: Address of a NetworkClient object
+//   contextData: Address of object allocated by r4aTelnetClientBegin
+// Outputs:
+//   Returns true if the client is done (requests exit)
+bool r4aTelnetContextProcessInput(NetworkClient * client, void * contextData);
 
 //****************************************
 // Telnet Server API
 //****************************************
 
-// Telnet server
-class R4A_TELNET_SERVER : WiFiServer
+class R4A_TELNET_SERVER
 {
-private:
-    enum R4A_TELNET_SERVER_STATE
-    {
-        R4A_TELNET_STATE_OFF = 0,
-        R4A_TELNET_STATE_ALLOCATE_CLIENT,
-        R4A_TELNET_STATE_LISTENING,
-        R4A_TELNET_STATE_SHUTDOWN,
-    };
-    uint8_t _state; // Telnet server state
-    uint16_t _port; // Port number for the telnet server
-    bool _echo;
-    R4A_TELNET_CLIENT * _newClient; // New client object, ready for listen call
-    R4A_TELNET_CLIENT * _clientList; // Singlely linked list of telnet clients
-    const R4A_MENU_TABLE * const _menuTable; // Address of all menu descriptions
-    const int _menuTableEntries;             // Number of entries in the menu table
-    const bool _blankLineBeforePreMenu;      // Display a blank line before the preMenu
-    const bool _blankLineBeforeMenuHeader;   // Display a blank line before the menu header
-    const bool _blankLineAfterMenuHeader;    // Display a blank line after the menu header
-    const bool _alignCommands;               // Align the commands
-    const bool _blankLineAfterMenu;          // Display a blank line after the menu
+  private:
 
-public:
+    R4A_TELNET_CLIENT ** _clients;
+    R4A_TELNET_CONTEXT_CREATE _contextCreate;
+    R4A_TELNET_CONTEXT_DELETE _contextDelete;
+    IPAddress _ipAddress;
+    const int _maxClients;
+    uint16_t _port;
+    R4A_TELNET_CLIENT_PROCESS_INPUT _processInput;
+    NetworkServer * _server;
 
-    Print * _debugState; // Address of Print object to display telnet server state changes
-    Print * _displayOptions; // Address of Print object to display telnet options
-
-    // Constructor
+    // Close the client specified by index i
     // Inputs:
-    //   menuTable: Address of table containing the menu descriptions, the
-    //              main menu must be the first entry in the table.
-    //   menuEntries: Number of entries in the menu table
-    //   blankLineBeforePreMenu: Display a blank line before the preMenu
-    //   blankLineBeforeMenuHeader: Display a blank line before the menu header
-    //   blankLineAfterMenuHeader: Display a blank line after the menu header
-    //   alignCommands: Align the commands
-    //   blankLineAfterMenu: Display a blank line after the menu
-    //   port: Port number for internet connection
-    //   echo: When true causes the input characters to be echoed
-    R4A_TELNET_SERVER(const R4A_MENU_TABLE * menuTable,
-                      int menuTableEntries,
-                      bool blankLineBeforePreMenu = true,
-                      bool blankLineBeforeMenuHeader = true,
-                      bool blankLineAfterMenuHeader = false,
-                      bool alignCommands = true,
-                      bool blankLineAfterMenu = false,
-                      uint16_t port = 23,
-                      bool echo = false)
-        : _menuTable{menuTable}, _menuTableEntries{menuTableEntries},
-          _state{0}, _port{port}, _echo{echo}, _newClient{nullptr},
-          _clientList{nullptr}, _debugState{nullptr}, _displayOptions{nullptr},
-          _blankLineBeforePreMenu{blankLineBeforePreMenu},
-          _blankLineBeforeMenuHeader{blankLineBeforeMenuHeader},
-          _blankLineAfterMenuHeader{blankLineAfterMenuHeader},
-          _alignCommands{alignCommands}, _blankLineAfterMenu{blankLineAfterMenu},
-          WiFiServer()
-    {
-    }
+    //   i: Index into the _clients list
+    void closeClient(uint16_t i);
 
-    // Destructor
-    ~R4A_TELNET_SERVER()
-    {
-        if (_newClient)
-            delete _newClient;
-        while (_clientList)
-        {
-            R4A_TELNET_CLIENT * client = _clientList;
-            _clientList = client->_nextClient;
-            client->stop();
-            delete client;
-        }
-    }
+    // Create a new telnet client
+    void newClient();
 
-    // Display the client list
-    void displayClientList(Print * display = &Serial);
+  public:
 
-    // Get the telnet port number
-    //  Returns the telnet port number set during initalization
+    // Constructor: Create the telnet server object
+    // Inputs:
+    //   maxClients: Specify the maximum number of clients supported by
+    //               the telnet server
+    //   processInput: Address of a function to process input characters
+    //   contextCreate: Address of a function to create the telnet context
+    //   contextDelete: Address of a function to delete the telnet context
+    R4A_TELNET_SERVER(uint16_t maxClients,
+                      R4A_TELNET_CLIENT_PROCESS_INPUT processInput,
+                      R4A_TELNET_CONTEXT_CREATE contextCreate = nullptr,
+                      R4A_TELNET_CONTEXT_DELETE contextDelete = nullptr);
+
+    // Destructor: Cleanup the things allocated in the constructor
+    ~R4A_TELNET_SERVER();
+
+    // Initialize the telnet server
+    // Inputs:
+    //   ipAddress: IP Address of the server
+    //   port: The port on the server used for telnet client connections
+    // Outputs:
+    //   Returns true following successful server initialization and false
+    //   upon failure.
+    bool begin(IPAddress ipAddress, uint16_t port);
+
+    // Restore state to just after constructor execution
+    void end();
+
+    // Get the IP address
+    IPAddress ipAddress(void);
+
+    // List the clients
+    // Inputs:
+    //   display: Device used for output
+    void listClients(Print * display = &Serial);
+
+    // Get the port number
     uint16_t port();
 
-    // Start and update the telnet server
+    // Display the server information
     // Inputs:
-    //   wifiConnected: Set true when WiFi is connected to an access point
-    //                  and false otherwise
-    void update(bool wifiConnected);
-};
+    //   display: Device used for output
+    void serverInfo(Print * display = &Serial);
 
-extern class R4A_TELNET_SERVER telnet;  // Server providing telnet access
+    // Update the server state
+    // Inputs:
+    //   connected: True when the network is connected and false upon
+    //              network failure
+    void update(bool connected);
+};
 
 //****************************************
 // Time Zone API

@@ -9,7 +9,7 @@
 
 //*********************************************************************
 // Read a line of input from a WiFi client into a String
-String * r4aReadLine(bool echo, String * buffer, WiFiClient * port)
+String * r4aReadLine(bool echo, String * buffer, NetworkClient * port)
 {
     char data;
     String * line;

@@ -718,7 +718,7 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
         if (wifiConnected)
         {
             // Allocate the _client structure
-            _client = new WiFiClient();
+            _client = new NetworkClient();
             if (!_client)
             {
                 // Failed to allocate the _client structure

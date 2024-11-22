@@ -9,6 +9,28 @@
 
 #include "secrets.h"
 
+#define TELNET_PORT             23
+#define MAX_TELNET_CLIENTS      4
+
+WiFiMulti wifiMulti;
+
+//****************************************
+// Forward routine declarations
+//****************************************
+
+bool contextCreate(NetworkClient * client, void ** contextData);
+void listClients(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
+void serverInfo(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
+
+//****************************************
+// Globals
+//****************************************
+
+R4A_TELNET_SERVER telnet(4,
+                         r4aTelnetContextProcessInput,
+                         contextCreate,
+                         r4aTelnetContextDelete);
+
 //****************************************
 // Menus
 //****************************************
@@ -18,12 +40,21 @@ enum MENU_TABLE_INDEX
     mtiTelnetMenu = R4A_MENU_MAIN + 1,
 };
 
+const R4A_MENU_ENTRY telnetMenuTable[] =
+{
+    // Command  menuRoutine     menuParam       HelpRoutine align   HelpText
+    {"List",    listClients,    0,              nullptr,    0,      "List the telnet clients"}, // 0
+    {"Server",  serverInfo,     0,              nullptr,    0,      "Server info"},             // 1
+    {"x",       nullptr,        R4A_MENU_MAIN,  nullptr,    0,      "Return to the main menu"}, // 2
+};                                                                                                          // 3
+#define TELNET_MENU_ENTRIES       sizeof(telnetMenuTable) / sizeof(telnetMenuTable[0])
+
 // Main menu
 const R4A_MENU_ENTRY mainMenuTable[] =
 {
     // Command  menuRoutine     menuParam       HelpRoutine align   HelpText
     {"telnet",  nullptr,        mtiTelnetMenu,  nullptr,    0,      "Enter the telnet menu"},
-    {"exit",    nullptr,        R4A_MENU_NONE,  nullptr,    0,      "Exit the menu system"},
+    {"x",       nullptr,        R4A_MENU_NONE,  nullptr,    0,      "Exit the menu system"},
 };
 #define MAIN_MENU_ENTRIES       sizeof(mainMenuTable) / sizeof(mainMenuTable[0])
 
@@ -31,49 +62,90 @@ const R4A_MENU_TABLE menuTable[] =
 {
     // menuName         preMenu routine             firstEntry              entryCount
     {"Main Menu",       nullptr,                    mainMenuTable,          MAIN_MENU_ENTRIES},
-    {"Telnet Menu",     r4aTelnetMenuStateDisplay,  r4aTelnetMenuTable,     R4A_TELNET_MENU_ENTRIES},
+    {"Telnet Menu",     nullptr,                    telnetMenuTable,        TELNET_MENU_ENTRIES},
 };
 const int menuTableEntries = sizeof(menuTable) / sizeof(menuTable[0]);
-
-//****************************************
-// Locals
-//****************************************
-
-R4A_TELNET_SERVER telnet(menuTable, menuTableEntries);
 
 //*********************************************************************
 // Entry point for the application
 void setup()
 {
-    // Initialize the serial port
     Serial.begin(115200);
     Serial.println();
-    Serial.println("Example 02_Telnet_Server");
+    Serial.printf("%s\r\n", __FILE__);
 
-    // Start the WiFi network
-    WiFi.begin(wifiSSID, wifiPassword);
+    // Scan WiFi for possible remote APs
+    Serial.println("Scanning WiFi ");
+    wifiMulti.addAP(wifiSSID1, wifiPassword1);
+    wifiMulti.addAP(wifiSSID2, wifiPassword2);
+
+    // Connect to a remote AP if possible
+    Serial.println("Connecting Wifi ");
+    for (int loops = 10; loops > 0; loops--)
+    {
+        if (wifiMulti.run() == WL_CONNECTED)
+            break;
+        else
+        {
+            Serial.println(loops);
+            delay(1000);
+        }
+    }
+    if (wifiMulti.run() != WL_CONNECTED)
+    {
+        Serial.println("WiFi connect failed");
+        delay(1000);
+        ESP.restart();
+    }
+
+    // Start the telnet server
+    telnet.begin(WiFi.STA.localIP(), TELNET_PORT);
+
+    // Display the IP address
+    Serial.println("");
+    Serial.printf("WiFi: %s:%d\r\n", WiFi.localIP().toString().c_str(), TELNET_PORT);
 }
 
 //*********************************************************************
 // Idle loop for the application
 void loop()
 {
-    static bool previousConnected;
-    bool wifiConnected;
+    telnet.update(wifiMulti.run() == WL_CONNECTED);
+}
 
-    // Determine if WiFi is connected
-    wifiConnected = (WiFi.status() == WL_CONNECTED);
+//*********************************************************************
+// Finish creating the network client
+// Inputs:
+//   client: Address of a NetworkClient object
+//   contextData: Buffer to receive the address of an object allocated by
+//                this routine
+// Outputs:
+//   Returns true if the routine was successful and false upon failure.
+bool contextCreate(NetworkClient * client, void ** contextData)
+{
+    // Return an optional object address to be used as a parameter for
+    // r4aTelnetClientProcessInput
+    return r4aTelnetContextCreate(client, menuTable, menuTableEntries, contextData);
+}
 
-    // Check for NTP updates
-    r4aNtpUpdate(wifiConnected);
+//*********************************************************************
+// Display the telnet clients
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void listClients(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    telnet.listClients(display);
+}
 
-    // Notify the telnet server of WiFi changes
-    telnet.update(wifiConnected);
-    if (previousConnected != wifiConnected)
-    {
-        previousConnected = wifiConnected;
-        if (wifiConnected)
-            Serial.printf("Telnet: %s:%d\r\n", WiFi.localIP().toString().c_str(),
-                          telnet.port());
-    }
+//*********************************************************************
+// Display the server information
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void serverInfo(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display)
+{
+    telnet.serverInfo(display);
 }
