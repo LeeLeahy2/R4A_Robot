@@ -10,6 +10,7 @@
 
 #include <Arduino.h>            // Built-in
 #include <base64.h>             // Built-in, needed for NTRIP Client credential encoding
+#include <BluetoothSerial.h>    // Built-in
 #include <esp32-hal-spi.h>      // Built-in
 #include <math.h>               // Built-in
 #include <Network.h>            // Built-in
@@ -718,20 +719,29 @@ extern const R4A_MENU_ENTRY r4aNtripClientMenuTable[];
 // ReadLine API
 //****************************************
 
-// Read a line of input from a serial port into a character array
+// Read a line of input from a Bluetooth serial port into a character array
 // Inputs:
-//   port: Address of a HardwareSerial port structure
 //   echo: Specify true to enable echo of input characters and false otherwise
 //   buffer: Address of a string that contains the input line
+//   port: Address of a Bluetooth serial port structure
+// Outputs:
+//   nullptr when the line is not complete
+String * r4aReadLine(bool echo, String * buffer, BluetoothSerial * port);
+
+// Read a line of input from a serial port into a character array
+// Inputs:
+//   echo: Specify true to enable echo of input characters and false otherwise
+//   buffer: Address of a string that contains the input line
+//   port: Address of a HardwareSerial port structure
 // Outputs:
 //   nullptr when the line is not complete
 String * r4aReadLine(bool echo, String * buffer, HardwareSerial * port = &Serial);
 
 // Read a line of input from a WiFi client into a character array
 // Inputs:
-//   port: Address of a NetworkClient port structure
 //   echo: Specify true to enable echo of input characters and false otherwise
 //   buffer: Address of a string that contains the input line
+//   port: Address of a NetworkClient port structure
 // Outputs:
 //   nullptr when the line is not complete
 String * r4aReadLine(bool echo, String * buffer, NetworkClient * port);
@@ -921,6 +931,14 @@ class R4A_ROBOT
 //   display: Device used for output
 void r4aReportFatalError(const char * errorMessage,
                          Print * display = &Serial);
+
+// Process Bluetooth menu item
+// Inputs:
+//   menu: Address of the menu object
+//   port: Address of a BluetoothSerial object
+// Outputs:
+//   Returns true when the client exits the menu system and false otherwise
+bool r4aBluetoothMenu(R4A_MENU * menu, BluetoothSerial * port);
 
 // Process serial menu item
 // Inputs:
