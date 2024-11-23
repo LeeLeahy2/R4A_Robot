@@ -870,9 +870,14 @@ class R4A_ROBOT
           _challenge{nullptr},
           _core{core},
           _displayTime{displayTime},
+          _endMsec{0},
           _idle{idle},
+          _initMsec{0},
+          _nextDisplayMsec{0},
           _startDelayMsec{startDelaySec * R4A_MILLISECONDS_IN_A_SECOND},
-          _state{STATE_IDLE}
+          _startMsec{0},
+          _state{STATE_IDLE},
+          _stopMsec{0}
     {
     }
 
