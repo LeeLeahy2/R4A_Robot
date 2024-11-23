@@ -742,10 +742,12 @@ String * r4aReadLine(bool echo, String * buffer, NetworkClient * port);
 
 class R4A_ROBOT_CHALLENGE
 {
-  public:
+  private:
 
     const char * _name; // Name of the challenge
     const uint32_t _duration; // Number of seconds to run the robot challenge
+
+  public:
 
     // Constructor
     R4A_ROBOT_CHALLENGE(const char * name, uint32_t durationSec)
@@ -760,9 +762,19 @@ class R4A_ROBOT_CHALLENGE
     // multiple times during the robot operation.
     virtual void challenge();
 
+    // Get the challenge duration
+    // Outputs:
+    //   Returns the challenge duration in seconds
+    uint32_t duration();
+
     // The robotStart calls this routine before switching to the initial
     // delay state.
     virtual void init();
+
+    // Get the challenge name
+    // Outputs:
+    //   Returns a zero terminated challenge name string
+    const char * name();
 
     // The initial delay routine calls this routine just before calling
     // the challenge routine for the first time.

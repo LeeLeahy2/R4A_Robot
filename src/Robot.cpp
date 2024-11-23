@@ -65,7 +65,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     previousChallenge = (R4A_ROBOT_CHALLENGE *)_challenge;
     if (previousChallenge)
     {
-        display->printf("ERROR: Robot already running %s!", previousChallenge->_name);
+        display->printf("ERROR: Robot already running %s!", previousChallenge->name());
         return false;
     }
 
@@ -82,7 +82,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
 
     // Display the start delay time
     display->printf("Delaying %d seconds before starting %s\r\n",
-                    _startDelayMsec / 1000, challenge->_name);
+                    _startDelayMsec / 1000, challenge->name());
 
     // Split the duration
     seconds = duration;
@@ -93,7 +93,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
 
     // Display the time
     display->printf("%s challenge duration %d:%02d:%02d\r\n",
-                    challenge->_name, hours, minutes, seconds);
+                    challenge->name(), hours, minutes, seconds);
     if (_displayTime)
         _displayTime(_startMsec - _nextDisplayMsec);
 
@@ -177,7 +177,7 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
             hours = minutes / R4A_MINUTES_IN_AN_HOUR;
             minutes -= hours * R4A_MINUTES_IN_AN_HOUR;
             display->printf("Stopped %s, runtime: %d:%02d:%02d.%03d\r\n",
-                            challenge->_name, hours, minutes, seconds, milliseconds);
+                            challenge->name(), hours, minutes, seconds, milliseconds);
         }
 
         // Display the runtime
