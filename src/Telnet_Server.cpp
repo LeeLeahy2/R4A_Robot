@@ -14,9 +14,10 @@ R4A_TELNET_SERVER::R4A_TELNET_SERVER(uint16_t maxClients,
                                      R4A_TELNET_CLIENT_PROCESS_INPUT processInput,
                                      R4A_TELNET_CONTEXT_CREATE contextCreate,
                                      R4A_TELNET_CONTEXT_DELETE contextDelete)
-    : _clients{nullptr}, _contextCreate{contextCreate}, _contextDelete{contextDelete},
-      _ipAddress{IPAddress((uint32_t)0)}, _maxClients{maxClients}, _port{0},
-      _processInput{processInput}, _server{nullptr}
+    : _activeClients{0}, _clients{nullptr}, _contextCreate{contextCreate},
+      _contextDelete{contextDelete}, _ipAddress{IPAddress((uint32_t)0)},
+      _maxClients{maxClients}, _port{0}, _processInput{processInput},
+      _server{nullptr}
 {
     size_t length;
 
@@ -75,6 +76,7 @@ void R4A_TELNET_SERVER::closeClient(uint16_t i)
 {
     if (_clients && _clients[i])
     {
+        _activeClients -= 1;
         delete _clients[i];
         _clients[i] = nullptr;
     }
@@ -154,6 +156,10 @@ void R4A_TELNET_SERVER::newClient()
                                                 _processInput,
                                                 _contextCreate,
                                                 _contextDelete);
+            if (_clients[i])
+                _activeClients += 1;
+            else
+                client.stop();
             break;
         }
     }
@@ -209,10 +215,9 @@ void R4A_TELNET_SERVER::update(bool connected)
     }
 
     // The network connection is broken
-    else
+    else if (_activeClients)
     {
         // Disconnect all of the client connections
-        Serial.println("WiFi not connected!");
         for (i = 0; i < _maxClients; i++)
         {
             client = _clients[i];
@@ -223,6 +228,5 @@ void R4A_TELNET_SERVER::update(bool connected)
                 closeClient(i);
             }
         }
-        delay(1000);
     }
 }

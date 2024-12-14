@@ -1181,6 +1181,7 @@ class R4A_TELNET_SERVER
 {
   private:
 
+    int _activeClients;
     R4A_TELNET_CLIENT ** _clients;
     R4A_TELNET_CONTEXT_CREATE _contextCreate;
     R4A_TELNET_CONTEXT_DELETE _contextDelete;
