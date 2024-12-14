@@ -11,11 +11,6 @@
 // Constants
 //****************************************
 
-#define R4A_LED_BLUE        0
-#define R4A_LED_GREEN       1
-#define R4A_LED_RED         2
-#define R4A_LED_WHITE       3
-
 #define R4A_LED_RESET       (5 * 6) // Zero bytes to cause reset
 #define R4A_LED_ONES        0       // One bytes to prevent reset
 
@@ -108,9 +103,9 @@ void r4aLEDSetColorRgb(uint8_t ledNumber,
     uint32_t color;
 
     // Construct the color value
-    color = (((uint32_t)red) << (R4A_LED_RED << 3))
-          | (((uint32_t)green) << (R4A_LED_GREEN << 3))
-          | (((uint32_t)blue) << (R4A_LED_BLUE << 3));
+    color = (((uint32_t)red) << R4A_LED_RED_SHIFT)
+          | (((uint32_t)green) << R4A_LED_GREEN_SHIFT)
+          | (((uint32_t)blue) << R4A_LED_BLUE_SHIFT);
 
     // Verify the LED number
     if (ledNumber < r4aLEDs)
@@ -131,8 +126,6 @@ void r4aLEDSetColorRgb(uint8_t ledNumber,
 // Set the SK6812RGBW LED colors
 void r4aLEDSetColorWrgb(uint8_t ledNumber, uint32_t color)
 {
-    uint8_t index;
-
     // White Bits: 32 - 24
     // Red Bits:   23 - 16
     // Green Bits: 15 -  8
@@ -162,13 +155,12 @@ void r4aLEDSetColorWrgb(uint8_t ledNumber,
                         uint8_t blue)
 {
     uint32_t color;
-    uint8_t index;
 
     // Construct the color value
-    color = (((uint32_t)red) << (R4A_LED_RED << 3))
-          | (((uint32_t)green) << (R4A_LED_GREEN << 3))
-          | (((uint32_t)blue) << (R4A_LED_BLUE << 3))
-          | (((uint32_t)white) << (R4A_LED_WHITE << 3));
+    color = (((uint32_t)red) << R4A_LED_RED_SHIFT)
+          | (((uint32_t)green) << R4A_LED_GREEN_SHIFT)
+          | (((uint32_t)blue) << R4A_LED_BLUE_SHIFT)
+          | (((uint32_t)white) << R4A_LED_WHITE_SHIFT);
 
     // Verify the LED number
     if (ledNumber < r4aLEDs)
@@ -311,7 +303,7 @@ void r4aLEDUpdate(bool updateRequest)
 
         // Add the reset sequence
         data = r4aLEDTxDmaBuffer;
-        if (R4A_LED_RESET)
+        if (R4A_LED_RESET == 0)
         {
             memset(data, 0, R4A_LED_RESET);
             data += R4A_LED_RESET;
@@ -397,7 +389,7 @@ void r4aLEDUpdate(bool updateRequest)
         }
 
         // Set the ones
-        if (R4A_LED_ONES)
+        if (R4A_LED_ONES != 0)
         {
             memset(data, 0xff, R4A_LED_ONES);
             data += R4A_LED_ONES;
@@ -585,11 +577,11 @@ void r4aLEDMenuDisplay(const R4A_MENU_ENTRY * menuEntry, const char * command, P
                       |  ((blue  * r4aLEDIntensity) / 255);
 
             if (r4aLEDFourColorsBitmap[led >> 3] & (1 << (led & 7)))
-                display->printf("%2d:   %3d    %3d    %3d    %3d   0x%08x   0x%08x\r\n",
+                display->printf("%2d:   %3d    %3d    %3d    %3d   0x%08lx   0x%08lx\r\n",
                                 led, white, red, green, blue, color, intensity);
 
             else
-                display->printf("%2d:          %3d    %3d    %3d     0x%06x     0x%06x\r\n",
+                display->printf("%2d:          %3d    %3d    %3d     0x%06lx     0x%06lx\r\n",
                                 led, red, green, blue, color, intensity);
         }
         display->printf("Intensity: %d\r\n", r4aLEDIntensity);

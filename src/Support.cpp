@@ -26,7 +26,7 @@ uint8_t * r4aSupportGetParameter(uint8_t ** parameter)
     while (*addr)
     {
         data = *addr;
-        if ((data == ' ') || (data == '/t') || (data == '/r') || (data == '/n'))
+        if ((data == ' ') || (data == '\t') || (data == '\r') || (data == '\n'))
         {
             *addr++ = 0;
             break;
@@ -50,7 +50,7 @@ uint8_t * r4aSupportRemoveWhiteSpace(uint8_t * parameter)
     // Remove the white space before the parameter
     while (*parameter)
     {
-        if ((*parameter != ' ') && (*parameter != '/t'))
+        if ((*parameter != ' ') && (*parameter != '\t'))
             break;
         parameter++;
     }
@@ -74,7 +74,7 @@ void r4aSupportTrimWhiteSpace(uint8_t * parameter)
     while (end > parameter)
     {
         data = *--end;
-        if ((data != ' ') && (data != '/t') && (data != '\r') && (data != '\n'))
+        if ((data != ' ') && (data != '\t') && (data != '\r') && (data != '\n'))
         {
             // Zero terminate the string
             *++end = 0;

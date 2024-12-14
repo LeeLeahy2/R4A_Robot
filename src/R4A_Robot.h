@@ -22,6 +22,8 @@
 #include <NTPClient.h>          // https://github.com/arduino-libraries/NTPClient
 #include <TimeLib.h>            // In Time library, format and parse time values
 
+#pragma GCC diagnostic ignored "-Wreorder"
+
 //****************************************
 // Constants
 //****************************************
@@ -169,6 +171,11 @@ void r4aDumpBuffer(uint32_t offset,
 #define R4A_LED_WHITE_RGB               0x00ffffff
 #define R4A_LED_WHITE_RGBW              0xff000000
 #define R4A_LED_YELLOW                  0x00ffff00
+
+#define R4A_LED_BLUE_SHIFT              0
+#define R4A_LED_GREEN_SHIFT             8
+#define R4A_LED_RED_SHIFT               16
+#define R4A_LED_WHITE_SHIFT             24
 
 // Set the WS2812 LED colors
 // Inputs:
@@ -467,6 +474,7 @@ void r4aLEDMenuOff(const R4A_MENU_ENTRY * menuEntry, const char * command, Print
 //****************************************
 
 extern bool r4aNtpDebugStates; // Set true to display state changes
+extern bool r4aNtpOnline; // Set true while client is connected to NTP server
 
 // Display the date and time
 // Inputs:

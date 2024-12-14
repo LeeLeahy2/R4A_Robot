@@ -101,7 +101,6 @@ volatile bool r4aNtripClientForcedShutdown = false; // Enable the NTRIP client
 // Attempt to connect to the NTRIP caster
 bool R4A_NTRIP_CLIENT::connect()
 {
-    int bytesRemaining;
     Print * display;
     int length;
 
@@ -199,8 +198,6 @@ bool R4A_NTRIP_CLIENT::connect()
 // Determine if another connection is possible or if the limit has been reached
 bool R4A_NTRIP_CLIENT::connectLimitReached()
 {
-    int index;
-
     // Retry the connection a few times
     bool limitReached = (_connectionAttempts >= r4aNtripClientBbackoffCount);
 
@@ -221,6 +218,7 @@ void R4A_NTRIP_CLIENT::displayResponse(Print * display, char * response, int byt
     const char * responseStart;
 
     // Walk through the response to locate each line
+    responseStart = response;
     while (((response - responseStart) < bytesRead) && *response)
     {
         // Locate the end of the line
@@ -340,7 +338,7 @@ void R4A_NTRIP_CLIENT::printStatus(Print * display)
         milliseconds %= R4A_MILLISECONDS_IN_A_SECOND;
 
         display->print(" Uptime: ");
-        display->printf("%d %02d:%02d:%02d.%03lld (Reconnects: %d)\r\n",
+        display->printf("%ld %02d:%02d:%02d.%03lld (Reconnects: %d)\r\n",
                         days, hours, minutes, seconds, milliseconds,
                         _connectionAttemptsTotal);
     }
@@ -404,9 +402,9 @@ int R4A_NTRIP_CLIENT::rbAddData(int length)
 
         // Account for the data copied
         bytesWritten += bytesRead;
-        _rbHead += bytesRead;
+        _rbHead = _rbHead + bytesRead;
         if (_rbHead >= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES)
-            _rbHead -= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
+            _rbHead = _rbHead - R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
     }
 
     // Determine if any data was read from the NTRIP caster
@@ -422,7 +420,6 @@ int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
 {
     int bytesAvailable;
 
-    int bytesRead;
     int bytesToTail;
     int bytesMinimum;
     int bytesToPush;
@@ -500,9 +497,9 @@ int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
             // Account for the data copied
             bytesAvailable -= bytesPushed;
             bytesWritten += bytesPushed;
-            _rbTail += bytesPushed;
+            _rbTail = _rbTail + bytesPushed;
             if (_rbTail >= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES)
-                _rbTail -= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
+                _rbTail = _rbTail - R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
         }
 
         // Display the RTCM written to the GNSS
@@ -859,14 +856,13 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
                 else
                 {
                     // Timeout receiving NTRIP data, retry the NTRIP client connection
-                    #if USING_NTP
+                    if (r4aNtpOnline)
                         display->printf("NTRIP Client connected to %s:%d at %s\r\n",
                                         r4aNtripClientCasterHost, r4aNtripClientCasterPort,
-                                        ntpGetTime24(ntpGetEpochTime()));
-                    #else USING_NTP
+                                        r4aNtpGetTime24(r4aNtpGetEpochTime()).c_str());
+                    else
                         display->printf("NTRIP Client connected to %s:%d\r\n",
                                         r4aNtripClientCasterHost, r4aNtripClientCasterPort);
-                    #endif  // USING_NTP
 
                     // Connection is now open, start the NTRIP receive data timer
                     _startTime = millis();
@@ -961,12 +957,11 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
                 if ((millis() - _timer) > r4aNtripClientReceiveTimeout)
                 {
                     // Timeout receiving NTRIP data, retry the NTRIP client connection
-                    #if USING_NTP
+                    if (r4aNtpOnline)
                         display->printf("NTRIP Client timeout receiving data at %s\r\n",
-                                        ntpGetTime24(ntpGetEpochTime()));
-                    #else USING_NTP
+                                        r4aNtpGetTime24(r4aNtpGetEpochTime()).c_str());
+                    else
                         display->println("NTRIP Client timeout receiving data");
-                    #endif  // USING_NTP
                     restart();
                 }
             }

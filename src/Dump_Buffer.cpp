@@ -28,7 +28,7 @@ void r4aDumpBuffer(uint32_t offset,
             bytes = 16 - (offset & 0xf);
 
         // Display the offset
-        sprintf(line, "0x%08x: ", offset);
+        sprintf(line, "0x%08lx: ", offset);
 
         // Skip leading bytes
         for (index = 0; index < (offset & 0xf); index++)

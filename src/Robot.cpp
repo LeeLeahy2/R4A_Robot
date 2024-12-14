@@ -81,7 +81,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     _endMsec = _startMsec + (duration * R4A_MILLISECONDS_IN_A_SECOND);
 
     // Display the start delay time
-    display->printf("Delaying %d seconds before starting %s\r\n",
+    display->printf("Delaying %ld seconds before starting %s\r\n",
                     _startDelayMsec / 1000, challenge->name());
 
     // Split the duration
@@ -92,7 +92,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     minutes -= hours * 60;
 
     // Display the time
-    display->printf("%s challenge duration %d:%02d:%02d\r\n",
+    display->printf("%s challenge duration %ld:%02ld:%02ld\r\n",
                     challenge->name(), hours, minutes, seconds);
     if (_displayTime)
         _displayTime(_startMsec - _nextDisplayMsec);
@@ -147,7 +147,6 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
     uint32_t minutes;
     uint32_t seconds;
     uint8_t state;
-    uint8_t previousState;
 
     // Stop the robot just once by setting _state to STATE_STOP
     state = SWITCH_STATE(STATE_STOP);
@@ -176,7 +175,7 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
             seconds -= minutes * R4A_SECONDS_IN_A_MINUTE;
             hours = minutes / R4A_MINUTES_IN_AN_HOUR;
             minutes -= hours * R4A_MINUTES_IN_AN_HOUR;
-            display->printf("Stopped %s, runtime: %d:%02d:%02d.%03d\r\n",
+            display->printf("Stopped %s, runtime: %ld:%02ld:%02ld.%03ld\r\n",
                             challenge->name(), hours, minutes, seconds, milliseconds);
         }
 

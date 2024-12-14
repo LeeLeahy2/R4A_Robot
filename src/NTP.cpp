@@ -41,6 +41,7 @@ const uint8_t r4aNtpStateNameCount = sizeof(r4aNtpStateName) / sizeof(r4aNtpStat
 //****************************************
 
 bool r4aNtpDebugStates; // Set true to display state changes
+bool r4aNtpOnline;
 
 //****************************************
 // Locals
@@ -292,6 +293,7 @@ void r4aNtpUpdate(bool wifiConnected)
             if (r4aNtpClient->isTimeSet())
             {
                 r4aNtpClient->setTimeOffset(r4aNtpTimeZoneOffsetSeconds);
+                r4aNtpOnline = true;
                 if (r4aNtpDisplayInitialTime)
                     r4aNtpDisplayDateTime();
                 r4aNtpSetState(R4A_NTP_STATE_TIME_UPDATE);
@@ -302,7 +304,10 @@ void r4aNtpUpdate(bool wifiConnected)
     case R4A_NTP_STATE_TIME_UPDATE:
         // Determine if the network has failed
         if (!wifiConnected)
+        {
+            r4aNtpOnline = false;
             r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
+        }
         else
             // Update the time each minute
             r4aNtpClient->update();

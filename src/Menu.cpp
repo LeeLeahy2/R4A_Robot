@@ -99,7 +99,7 @@ bool R4A_MENU::process(const char * command,
                     uint32_t index = (int)menuEntry->menuParameter;
                     if (_debug)
                     {
-                        Serial.printf("index: %d\r\n", index);
+                        Serial.printf("index: %ld\r\n", index);
                         Serial.printf("_menuTableEntries: %d\r\n", _menuTableEntries);
                     }
 
@@ -175,7 +175,7 @@ bool R4A_MENU::process(const char * command,
         if (_debug)
         {
             Serial.printf("_alignCommands: %d\r\n", _alignCommands);
-            Serial.printf("_menu->menuEntryCount: %d\r\n", _menu->menuEntryCount);
+            Serial.printf("_menu->menuEntryCount: %ld\r\n", _menu->menuEntryCount);
             Serial.printf("_menu->firstEntry: %p\r\n", _menu->firstEntry);
         }
         maxLength = 0;
