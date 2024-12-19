@@ -8,6 +8,33 @@
 #include "R4A_Robot.h"
 
 //*********************************************************************
+// Constructor
+// Inputs:
+//   menuTable: Address of table containing the menu descriptions, the
+//              main menu must be the first entry in the table.
+//   menuEntries: Number of entries in the menu table
+//   blankLineBeforePreMenu: Display a blank line before the preMenu
+//   blankLineBeforeMenuHeader: Display a blank line before the menu header
+//   blankLineAfterMenuHeader: Display a blank line after the menu header
+//   alignCommands: Align the commands
+//   blankLineAfterMenu: Display a blank line after the menu
+R4A_MENU::R4A_MENU(const R4A_MENU_TABLE * menuTable,
+                   int menuEntries,
+                   bool blankLineBeforePreMenu,
+                   bool blankLineBeforeMenuHeader,
+                   bool blankLineAfterMenuHeader,
+                   bool alignCommands,
+                   bool blankLineAfterMenu)
+    : _debug{false}, _menu{nullptr}, _menuTable{menuTable},
+      _menuTableEntries{menuEntries},
+      _blankLineBeforePreMenu{blankLineBeforePreMenu},
+      _blankLineBeforeMenuHeader{blankLineBeforeMenuHeader},
+      _blankLineAfterMenuHeader{blankLineAfterMenuHeader},
+      _alignCommands{alignCommands}, _blankLineAfterMenu{blankLineAfterMenu}
+{
+}
+
+//*********************************************************************
 // Process the menu command or display the menu
 // Returns true when exiting the menu system
 bool R4A_MENU::process(const char * command,

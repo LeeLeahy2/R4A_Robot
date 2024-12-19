@@ -10,6 +10,36 @@
 #define SWITCH_STATE(newState)      __atomic_exchange_1((uint8_t *)&_state, newState, 0)
 
 //*********************************************************************
+// Constructor
+// Inputs:
+//   core: CPU core that is running the robot layer
+//   startDelaySec: Number of seconds before the robot starts a challenge
+//   afterRunSec: Number of seconds after the robot completes a challenge
+//                before the robot layer switches back to the idle state
+//   idle: Address of the idle routine, may be nullptr
+//   displayTime: Address of the routine to display the time, may be nullptr
+R4A_ROBOT::R4A_ROBOT(int core,
+                     uint32_t startDelaySec,
+                     uint32_t afterRunSec,
+                     R4A_ROBOT_TIME_CALLBACK idle,
+                     R4A_ROBOT_TIME_CALLBACK displayTime)
+    : _afterRunMsec{afterRunSec * R4A_MILLISECONDS_IN_A_SECOND},
+      _busy{false},
+      _challenge{nullptr},
+      _core{core},
+      _displayTime{displayTime},
+      _endMsec{0},
+      _idle{idle},
+      _initMsec{0},
+      _nextDisplayMsec{0},
+      _startDelayMsec{startDelaySec * R4A_MILLISECONDS_IN_A_SECOND},
+      _startMsec{0},
+      _state{STATE_IDLE},
+      _stopMsec{0}
+{
+}
+
+//*********************************************************************
 // Perform the initial delay
 void R4A_ROBOT::initialDelay(uint32_t currentMsec)
 {

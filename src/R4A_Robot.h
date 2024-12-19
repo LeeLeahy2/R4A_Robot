@@ -336,15 +336,7 @@ class R4A_MENU
             bool blankLineBeforeMenuHeader = true,
             bool blankLineAfterMenuHeader = false,
             bool alignCommands = true,
-            bool blankLineAfterMenu = false)
-        : _debug{false}, _menu{nullptr}, _menuTable{menuTable},
-          _menuTableEntries{menuEntries},
-          _blankLineBeforePreMenu{blankLineBeforePreMenu},
-          _blankLineBeforeMenuHeader{blankLineBeforeMenuHeader},
-          _blankLineAfterMenuHeader{blankLineAfterMenuHeader},
-          _alignCommands{alignCommands}, _blankLineAfterMenu{blankLineAfterMenu}
-    {
-    }
+            bool blankLineAfterMenu = false);
 
     // Enable or disable debugging
     // Inputs:
@@ -644,21 +636,7 @@ class R4A_NTRIP_CLIENT
   public:
 
     // Constructor
-    R4A_NTRIP_CLIENT()
-        : _client{nullptr},
-          _state{NTRIP_CLIENT_OFF},
-          _connectionDelayMsec{r4aNtripClientBbackoffIntervalMsec[0]},
-          _connectionAttempts{0},
-          _connectionAttemptsTotal{0},
-          _forcedShutdown{false},
-          _timer{0},
-          _startTime{0},
-          _responseLength{0},
-          _rbHead{0},
-          _rbTail{0},
-          _i2cTransactionSize{0}
-    {
-    };
+    R4A_NTRIP_CLIENT();
 
     // Attempt to connect to the NTRIP caster
     bool connect();
@@ -768,10 +746,7 @@ class R4A_ROBOT_CHALLENGE
   public:
 
     // Constructor
-    R4A_ROBOT_CHALLENGE(const char * name, uint32_t durationSec)
-        : _name{name}, _duration{durationSec}
-    {
-    }
+    R4A_ROBOT_CHALLENGE(const char * name, uint32_t durationSec);
 
     // The robotRunning routine calls this routine to actually perform
     // the challenge.  This routine typically reads a sensor and may
@@ -882,22 +857,7 @@ class R4A_ROBOT
               uint32_t startDelaySec = 10,
               uint32_t afterRunSec = 30,
               R4A_ROBOT_TIME_CALLBACK idle = nullptr,
-              R4A_ROBOT_TIME_CALLBACK displayTime = nullptr)
-        : _afterRunMsec{afterRunSec * R4A_MILLISECONDS_IN_A_SECOND},
-          _busy{false},
-          _challenge{nullptr},
-          _core{core},
-          _displayTime{displayTime},
-          _endMsec{0},
-          _idle{idle},
-          _initMsec{0},
-          _nextDisplayMsec{0},
-          _startDelayMsec{startDelaySec * R4A_MILLISECONDS_IN_A_SECOND},
-          _startMsec{0},
-          _state{STATE_IDLE},
-          _stopMsec{0}
-    {
-    }
+              R4A_ROBOT_TIME_CALLBACK displayTime = nullptr);
 
     // Determine if it is possible to start the robot
     // Inputs:
@@ -1144,13 +1104,7 @@ public:
                        bool blankLineBeforeMenuHeader = true,
                        bool blankLineAfterMenuHeader = false,
                        bool alignCommands = true,
-                       bool blankLineAfterMenu = false)
-        : _command{String("")}, _displayOptions{displayOptions}, _echo{echo},
-          _menu{R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
-                blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
-                alignCommands, blankLineAfterMenu)}
-    {
-    }
+                       bool blankLineAfterMenu = false);
 };
 
 // Finish creating the network client

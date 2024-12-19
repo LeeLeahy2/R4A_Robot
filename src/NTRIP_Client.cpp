@@ -98,6 +98,24 @@ volatile bool r4aNtripClientEnable = false;         // Enable the NTRIP client
 volatile bool r4aNtripClientForcedShutdown = false; // Enable the NTRIP client
 
 //*********************************************************************
+// Constructor
+R4A_NTRIP_CLIENT::R4A_NTRIP_CLIENT()
+    : _client{nullptr},
+      _state{NTRIP_CLIENT_OFF},
+      _connectionDelayMsec{r4aNtripClientBbackoffIntervalMsec[0]},
+      _connectionAttempts{0},
+      _connectionAttemptsTotal{0},
+      _forcedShutdown{false},
+      _timer{0},
+      _startTime{0},
+      _responseLength{0},
+      _rbHead{0},
+      _rbTail{0},
+      _i2cTransactionSize{0}
+{
+}
+
+//*********************************************************************
 // Attempt to connect to the NTRIP caster
 bool R4A_NTRIP_CLIENT::connect()
 {

@@ -8,6 +8,33 @@
 #include "R4A_Robot.h"
 
 //*********************************************************************
+// Constructor
+// Inputs:
+//   menuTable: Address of table containing the menu descriptions, the
+//              main menu must be the first entry in the table.
+//   menuEntries: Number of entries in the menu table
+//   blankLineBeforePreMenu: Display a blank line before the preMenu
+//   blankLineBeforeMenuHeader: Display a blank line before the menu header
+//   blankLineAfterMenuHeader: Display a blank line after the menu header
+//   alignCommands: Align the commands
+//   blankLineAfterMenu: Display a blank line after the menu
+R4A_TELNET_CONTEXT::R4A_TELNET_CONTEXT(const R4A_MENU_TABLE * menuTable,
+                                       int menuTableEntries,
+                                       bool displayOptions,
+                                       bool echo,
+                                       bool blankLineBeforePreMenu,
+                                       bool blankLineBeforeMenuHeader,
+                                       bool blankLineAfterMenuHeader,
+                                       bool alignCommands,
+                                       bool blankLineAfterMenu)
+    : _command{String("")}, _displayOptions{displayOptions}, _echo{echo},
+      _menu{R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
+            blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
+            alignCommands, blankLineAfterMenu)}
+{
+}
+
+//*********************************************************************
 // Finish creating the network client
 // Inputs:
 //   client: Address of a NetworkClient object
