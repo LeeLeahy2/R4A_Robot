@@ -736,47 +736,44 @@ String * r4aReadLine(bool echo, String * buffer, NetworkClient * port);
 // Robot Challenge class
 //****************************************
 
-class R4A_ROBOT_CHALLENGE
+// The robotRunning routine calls this routine to actually perform
+// the challenge.  This routine typically reads a sensor and may
+// optionally adjust the motors based upon the sensor reading.  The
+// routine then must return.  The robot layer will call this routine
+// multiple times during the robot operation.
+// Inputs:
+//   object: Address of a R4A_ROBOT_CHALLENGE data structure
+typedef void (* R4A_ROBOT_CHALLENGE_ROUTINE)(struct _R4A_ROBOT_CHALLENGE * object);
+
+// The robotStart calls this routine before switching to the initial
+// delay state.
+// Inputs:
+//   object: Address of a R4A_ROBOT_CHALLENGE data structure
+typedef void (* R4A_ROBOT_CHALLENGE_INIT)(struct _R4A_ROBOT_CHALLENGE * object);
+
+// The initial delay routine calls this routine just before calling
+// the challenge routine for the first time.
+// Inputs:
+//   object: Address of a R4A_ROBOT_CHALLENGE data structure
+typedef void (* R4A_ROBOT_CHALLENGE_START)(struct _R4A_ROBOT_CHALLENGE * object);
+
+// The robotStop routine calls this routine to stop the motors and
+// perform any other actions.
+// Inputs:
+//   object: Address of a R4A_ROBOT_CHALLENGE data structure
+typedef void (* R4A_ROBOT_CHALLENGE_STOP)(struct _R4A_ROBOT_CHALLENGE * object);
+
+typedef struct _R4A_ROBOT_CHALLENGE
 {
-  private:
+    // Constants, DO NOT MODIFY, set during structure initialization
+    R4A_ROBOT_CHALLENGE_ROUTINE _challenge;
+    R4A_ROBOT_CHALLENGE_INIT _init;
+    R4A_ROBOT_CHALLENGE_START _start;
+    R4A_ROBOT_CHALLENGE_STOP _stop;
 
     const char * _name; // Name of the challenge
-    const uint32_t _duration; // Number of seconds to run the robot challenge
-
-  public:
-
-    // Constructor
-    R4A_ROBOT_CHALLENGE(const char * name, uint32_t durationSec);
-
-    // The robotRunning routine calls this routine to actually perform
-    // the challenge.  This routine typically reads a sensor and may
-    // optionally adjust the motors based upon the sensor reading.  The
-    // routine then must return.  The robot layer will call this routine
-    // multiple times during the robot operation.
-    virtual void challenge();
-
-    // Get the challenge duration
-    // Outputs:
-    //   Returns the challenge duration in seconds
-    uint32_t duration();
-
-    // The robotStart calls this routine before switching to the initial
-    // delay state.
-    virtual void init();
-
-    // Get the challenge name
-    // Outputs:
-    //   Returns a zero terminated challenge name string
-    const char * name();
-
-    // The initial delay routine calls this routine just before calling
-    // the challenge routine for the first time.
-    virtual void start();
-
-    // The robotStop routine calls this routine to stop the motors and
-    // perform any other actions.
-    virtual void stop();
-};
+    uint32_t _duration; // Number of seconds to run the robot challenge
+} R4A_ROBOT_CHALLENGE;
 
 //****************************************
 // Robot class

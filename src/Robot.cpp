@@ -57,7 +57,7 @@ void R4A_ROBOT::initialDelay(uint32_t currentMsec)
         if (deltaTime >= 0)
         {
             // Notify the challenge of the start
-            challenge->start();
+            challenge->_start(challenge);
 
             // Switch to running the robot
             if (SWITCH_STATE(STATE_RUNNING))
@@ -95,7 +95,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     previousChallenge = (R4A_ROBOT_CHALLENGE *)_challenge;
     if (previousChallenge)
     {
-        display->printf("ERROR: Robot already running %s!", previousChallenge->name());
+        display->printf("ERROR: Robot already running %s!", previousChallenge->_name);
         return false;
     }
 
@@ -112,7 +112,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
 
     // Display the start delay time
     display->printf("Delaying %ld seconds before starting %s\r\n",
-                    _startDelayMsec / 1000, challenge->name());
+                    _startDelayMsec / 1000, challenge->_name);
 
     // Split the duration
     seconds = duration;
@@ -123,12 +123,12 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
 
     // Display the time
     display->printf("%s challenge duration %ld:%02ld:%02ld\r\n",
-                    challenge->name(), hours, minutes, seconds);
+                    challenge->_name, hours, minutes, seconds);
     if (_displayTime)
         _displayTime(_startMsec - _nextDisplayMsec);
 
     // Call the initialization routine
-    challenge->init();
+    challenge->_init(challenge);
 
     // Start the robot
     _challenge = challenge;    // Update the LED colors
@@ -157,7 +157,7 @@ void R4A_ROBOT::running(uint32_t currentMsec)
         // Determine the challenge should stop
         if (((int32_t)(_endMsec - currentMsec)) > 0)
             // Perform the robot challenge
-            challenge->challenge();
+            challenge->_challenge(challenge);
         else
             // Stop the robot
             stop(currentMsec);
@@ -192,7 +192,7 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
 
         // Call the challenge stop routine to stop the motors
         challenge = (R4A_ROBOT_CHALLENGE *)_challenge;
-        challenge->stop();
+        challenge->_stop(challenge);
 
         // Display the runtime
         if (display)
@@ -206,7 +206,7 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
             hours = minutes / R4A_MINUTES_IN_AN_HOUR;
             minutes -= hours * R4A_MINUTES_IN_AN_HOUR;
             display->printf("Stopped %s, runtime: %ld:%02ld:%02ld.%03ld\r\n",
-                            challenge->name(), hours, minutes, seconds, milliseconds);
+                            challenge->_name, hours, minutes, seconds, milliseconds);
         }
 
         // Display the runtime
