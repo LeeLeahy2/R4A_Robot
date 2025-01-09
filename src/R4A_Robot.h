@@ -221,15 +221,11 @@ void r4aLEDSetIntensity(uint8_t intensity);
 
 // Initialize the WS2812 LEDs
 // Inputs:
-//   spiNumber: Number of the SPI bus
-//   pinMOSI: Pin number of the MOSI pin that connects to the SPI TX data line
-//   ClockHz: SPI clock frequency in Hertz
+//   spi: Address of an R4A_SPI data structure
 //   numberOfLEDs: Number of multi-color LEDs in the string
 // Outputs:
 //   Returns true for successful initialization and false upon error
-bool r4aLEDSetup(uint8_t spiNumber,
-                 uint8_t pinMOSI,
-                 uint32_t clockHz,
+bool r4aLEDSetup(struct _R4A_SPI * spi,
                  uint8_t numberOfLEDs);
 
 // Turn off the LEDs
@@ -914,35 +910,29 @@ void r4aSerialMenu(R4A_MENU * menu);
 // SPI API
 //****************************************
 
-class R4A_SPI
+// Allocate DMA buffer
+// Inputs:
+//   length: Number of data bytes to allocate
+// Outputs:
+//   Returns the buffer address if successful and nullptr otherwise
+typedef uint8_t * (* R4A_SPI_ALLOCATE_DMA_BUFFER)(int length);
+
+// Transfer data to the SPI device
+// Inputs:
+//   spi: Address of an R4A_SPI data structure
+//   txBuffer: Address of the buffer containing the data to send
+//   rxBuffer: Address of the receive data buffer
+//   length: Number of data bytes to transfer
+typedef void (* R4A_SPI_TRANSFER)(struct _R4A_SPI * spi,
+                                  const uint8_t * txBuffer,
+                                  uint8_t * rxBuffer,
+                                  uint32_t length);
+
+typedef struct _R4A_SPI
 {
-  public:
-
-    // Allocate DMA buffer
-    // Inputs:
-    //   length: Number of data bytes to allocate
-    // Outputs:
-    //   Returns the buffer address if successful and nullptr otherwise
-    virtual uint8_t * allocateDmaBuffer(int length);
-
-    // Initialize the SPI controller
-    // Inputs:
-    //   spiNumber: Number of the SPI controller
-    //   pinMOSI: SPI TX data pin number
-    //   clockHz: SPI clock frequency in Hertz
-    // Outputs:
-    //   Return true if successful and false upon failure
-    virtual bool begin(uint8_t spiNumber, uint8_t pinMOSI, uint32_t clockHz);
-
-    // Transfer data to the SPI device
-    // Inputs:
-    //   txBuffer: Address of the buffer containing the data to send
-    //   rxBuffer: Address of the receive data buffer
-    //   length: Number of data bytes to transfer
-    virtual void transfer(const uint8_t * txBuffer,
-                          uint8_t * rxBuffer,
-                          uint32_t length);
-};
+    R4A_SPI_ALLOCATE_DMA_BUFFER allocateDmaBuffer;
+    R4A_SPI_TRANSFER transfer;
+} R4A_SPI;
 
 extern R4A_SPI * r4aSpi;
 

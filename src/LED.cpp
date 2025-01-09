@@ -25,6 +25,7 @@ volatile bool r4aLEDColorWritten;
 uint8_t *  r4aLEDFourColorsBitmap;
 uint8_t r4aLEDIntensity = 255;
 uint8_t r4aLEDs;
+R4A_SPI * r4aLEDSpi;
 uint8_t *  r4aLEDTxDmaBuffer;
 
 //*********************************************************************
@@ -188,9 +189,7 @@ void r4aLEDSetIntensity(uint8_t intensity)
 
 //*********************************************************************
 // Initialize the LEDs
-bool r4aLEDSetup(uint8_t spiNumber,
-                 uint8_t pinMOSI,
-                 uint32_t clockHz,
+bool r4aLEDSetup(R4A_SPI * spi,
                  uint8_t numberOfLEDs)
 {
     int ledBytes;
@@ -199,11 +198,12 @@ bool r4aLEDSetup(uint8_t spiNumber,
     do
     {
         // Determine if the SPI controller object was allocated
-        if (!r4aSpi)
+        if (!spi)
         {
-            Serial.println("ERROR: Failed to allocate r4aSpi!");
+            Serial.println("ERROR: No SPI data structure specified!");
             break;
         }
+        r4aLEDSpi = spi;
 
         // Remember the number of LEDs
         r4aLEDs = numberOfLEDs;
@@ -214,7 +214,7 @@ bool r4aLEDSetup(uint8_t spiNumber,
         // bits / color bit packed in 8 bits per byte
         ledBytes = numberOfLEDs * 4 * 5;
         length = R4A_LED_RESET + ledBytes + R4A_LED_ONES;
-        r4aLEDTxDmaBuffer = r4aSpi->allocateDmaBuffer(length);
+        r4aLEDTxDmaBuffer = r4aLEDSpi->allocateDmaBuffer(length);
         if (!r4aLEDTxDmaBuffer)
         {
             Serial.println("ERROR: Failed to allocate r4aLEDTxDmaBuffer!");
@@ -244,14 +244,10 @@ bool r4aLEDSetup(uint8_t spiNumber,
         // Assume all LEDs are 4 color
         memset(r4aLEDFourColorsBitmap, 0xff, length);
 
-        // Initialize the SPI controller
-        if (r4aSpi->begin(spiNumber, pinMOSI, clockHz))
-        {
-            // Turn off the LEDs
-            r4aLEDColorWritten = true;
-            r4aLEDUpdate(true);
-            return true;
-        }
+        // Turn off the LEDs
+        r4aLEDColorWritten = true;
+        r4aLEDUpdate(true);
+        return true;
     } while (0);
 
     // Free the allocated memory
@@ -401,7 +397,7 @@ void r4aLEDUpdate(bool updateRequest)
 
     // Output the color data to the LEDs
     if (updateRequest)
-        r4aSpi->transfer(r4aLEDTxDmaBuffer, nullptr, length);
+        r4aLEDSpi->transfer(r4aLEDSpi, r4aLEDTxDmaBuffer, nullptr, length);
 }
 
 //****************************************
