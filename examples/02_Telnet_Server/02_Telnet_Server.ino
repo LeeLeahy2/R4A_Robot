@@ -18,7 +18,7 @@ WiFiMulti wifiMulti;
 // Forward routine declarations
 //****************************************
 
-bool contextCreate(NetworkClient * client, void ** contextData);
+bool contextCreate(void ** contextData, NetworkClient * client);
 void listClients(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 void serverInfo(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 
@@ -116,16 +116,16 @@ void loop()
 //*********************************************************************
 // Finish creating the network client
 // Inputs:
-//   client: Address of a NetworkClient object
 //   contextData: Buffer to receive the address of an object allocated by
 //                this routine
+//   client: Address of a NetworkClient object
 // Outputs:
 //   Returns true if the routine was successful and false upon failure.
-bool contextCreate(NetworkClient * client, void ** contextData)
+bool contextCreate(void ** contextData, NetworkClient * client)
 {
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
-    return r4aTelnetContextCreate(client, menuTable, menuTableEntries, contextData);
+    return r4aTelnetContextCreate(contextData, client, menuTable, menuTableEntries);
 }
 
 //*********************************************************************

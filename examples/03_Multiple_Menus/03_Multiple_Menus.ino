@@ -22,12 +22,11 @@ static bool echoCommand;
 // Forward routine declarations
 //****************************************
 
-bool contextCreate23(NetworkClient * client, void ** contextData);
-bool contextCreate24(NetworkClient * client, void ** contextData);
-void contextDelete(void * contextData);
+bool contextCreate23(void ** contextData, NetworkClient * client);
+bool contextCreate24(void ** contextData, NetworkClient * client);
 void listClients23(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 void listClients24(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
-bool serialOutput(NetworkClient * client, void * contextData);
+bool serialOutput(void * contextData, NetworkClient * client);
 void serverInfo23(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 void serverInfo24(const R4A_MENU_ENTRY * menuEntry, const char * command, Print * display);
 
@@ -227,37 +226,37 @@ void loop()
 //*********************************************************************
 // Finish creating the network client
 // Inputs:
-//   client: Address of a NetworkClient object
 //   contextData: Buffer to receive the address of an object allocated by
 //                this routine
+//   client: Address of a NetworkClient object
 // Outputs:
 //   Returns true if the routine was successful and false upon failure.
-bool contextCreate23(NetworkClient * client, void ** contextData)
+bool contextCreate23(void ** contextData, NetworkClient * client)
 {
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
-    return r4aTelnetContextCreate(client,
+    return r4aTelnetContextCreate(contextData,
+                                  client,
                                   menuTable23,
-                                  menuTable23Entries,
-                                  contextData);
+                                  menuTable23Entries);
 }
 
 //*********************************************************************
 // Finish creating the network client
 // Inputs:
-//   client: Address of a NetworkClient object
 //   contextData: Buffer to receive the address of an object allocated by
 //                this routine
+//   client: Address of a NetworkClient object
 // Outputs:
 //   Returns true if the routine was successful and false upon failure.
-bool contextCreate24(NetworkClient * client, void ** contextData)
+bool contextCreate24(void ** contextData, NetworkClient * client)
 {
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
-    return r4aTelnetContextCreate(client,
+    return r4aTelnetContextCreate(contextData,
+                                  client,
                                   menuTable24,
-                                  menuTable24Entries,
-                                  contextData);
+                                  menuTable24Entries);
 }
 
 //*********************************************************************
@@ -285,11 +284,11 @@ void listClients24(const R4A_MENU_ENTRY * menuEntry, const char * command, Print
 //*********************************************************************
 // Process input from the telnet client
 // Inputs:
-//   client: Address of a NetworkClient object
 //   contextData: Address of object allocated by r4aTelnetClientBegin
+//   client: Address of a NetworkClient object
 // Outputs:
 //   Returns true if the client is done (requests exit)
-bool serialOutput(NetworkClient * client, void * contextData)
+bool serialOutput(void * contextData, NetworkClient * client)
 {
     // Copy the output to the serial port
     while (client->available())

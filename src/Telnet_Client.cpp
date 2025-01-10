@@ -20,7 +20,7 @@ R4A_TELNET_CLIENT::R4A_TELNET_CLIENT(NetworkClient client,
 {
     // Save the user parameter
     if (_contextCreate)
-        _contextCreate(&_client, &_contextData);
+        _contextCreate(&_contextData, &_client);
 }
 
 //*********************************************************************
@@ -28,7 +28,7 @@ R4A_TELNET_CLIENT::R4A_TELNET_CLIENT(NetworkClient client,
 R4A_TELNET_CLIENT::~R4A_TELNET_CLIENT()
 {
     if (_contextDelete)
-        _contextDelete(_contextData);
+        _contextDelete(&_contextData);
 }
 
 //*********************************************************************
@@ -57,7 +57,7 @@ bool R4A_TELNET_CLIENT::processInput()
             {
                 // Process the input character
                 if (_processInput)
-                    done = _processInput(&_client, _contextData);
+                    done = _processInput(_contextData, &_client);
                 else
                     Serial.write(_client.read());
 

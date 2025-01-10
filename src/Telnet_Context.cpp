@@ -8,56 +8,94 @@
 #include "R4A_Robot.h"
 
 //*********************************************************************
-// Constructor
+// Initialize the R4A_TELNET_CONTEXT data structure
 // Inputs:
+//   context: Address of an R4A_TELNET_CONTEXT data structure
 //   menuTable: Address of table containing the menu descriptions, the
 //              main menu must be the first entry in the table.
 //   menuEntries: Number of entries in the menu table
+//   displayOptions: Display the telnet header options
+//   echo: Echo the input characters
 //   blankLineBeforePreMenu: Display a blank line before the preMenu
 //   blankLineBeforeMenuHeader: Display a blank line before the menu header
 //   blankLineAfterMenuHeader: Display a blank line after the menu header
 //   alignCommands: Align the commands
 //   blankLineAfterMenu: Display a blank line after the menu
-R4A_TELNET_CONTEXT::R4A_TELNET_CONTEXT(const R4A_MENU_TABLE * menuTable,
-                                       int menuTableEntries,
-                                       bool displayOptions,
-                                       bool echo,
-                                       bool blankLineBeforePreMenu,
-                                       bool blankLineBeforeMenuHeader,
-                                       bool blankLineAfterMenuHeader,
-                                       bool alignCommands,
-                                       bool blankLineAfterMenu)
-    : _command{String("")}, _displayOptions{displayOptions}, _echo{echo}
+void r4aTelnetContextBegin(R4A_TELNET_CONTEXT * context,
+                           const R4A_MENU_TABLE * menuTable,
+                           int menuTableEntries,
+                           bool displayOptions,
+                           bool echo,
+                           bool blankLineBeforePreMenu,
+                           bool blankLineBeforeMenuHeader,
+                           bool blankLineAfterMenuHeader,
+                           bool alignCommands,
+                           bool blankLineAfterMenu)
 {
-    r4aMenuBegin(&_menu, menuTable, menuTableEntries, blankLineBeforePreMenu,
-            blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
-            alignCommands, blankLineAfterMenu);
+    // Initialize the command string
+    context->_command = String("");
+
+    // Set the telnet options
+    context->_displayOptions = displayOptions;
+    context->_echo = echo;
+
+    // Set the menu options
+    r4aMenuBegin(&context->_menu,
+                 menuTable,
+                 menuTableEntries,
+                 blankLineBeforePreMenu,
+                 blankLineBeforeMenuHeader,
+                 blankLineAfterMenuHeader,
+                 alignCommands,
+                 blankLineAfterMenu);
 }
 
 //*********************************************************************
 // Finish creating the network client
 // Inputs:
+//   contextAddr: Buffer to receive the address of an R4A_TELNET_CONTEXT
+//                data structure allocated by this routine
 //   client: Address of a NetworkClient object
 //   menuTable: Address of table containing the menu descriptions, the
 //              main menu must be the first entry in the table.
 //   menuEntries: Number of entries in the menu table
-//   contextData: Buffer to receive the address of an object allocated by
-//                this routine
 // Outputs:
 //   Returns true if the routine was successful and false upon failure.
-bool r4aTelnetContextCreate(NetworkClient * client,
+bool r4aTelnetContextCreate(void ** contextAddr,
+                            NetworkClient * client,
                             const R4A_MENU_TABLE * menuTable,
                             int menuTableEntries,
-                            void ** contextData)
+                            bool displayOptions,
+                            bool echo,
+                            bool blankLineBeforePreMenu,
+                            bool blankLineBeforeMenuHeader,
+                            bool blankLineAfterMenuHeader,
+                            bool alignCommands,
+                            bool blankLineAfterMenu)
 {
     R4A_TELNET_CONTEXT * context;
 
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
-    context = new R4A_TELNET_CONTEXT(menuTable, menuTableEntries);
-    *contextData = (void *)context;
-    if (contextData)
+    context = (R4A_TELNET_CONTEXT *)malloc(sizeof(*context));
+    if (context)
     {
+        // Save the allocated context address
+        *contextAddr = (void *)context;
+
+        // Initialize the menu
+        memset(context, 0, sizeof(*context));
+        r4aTelnetContextBegin(context,
+                              menuTable,
+                              menuTableEntries,
+                              displayOptions,
+                              echo,
+                              blankLineBeforePreMenu,
+                              blankLineBeforeMenuHeader,
+                              blankLineAfterMenuHeader,
+                              alignCommands,
+                              blankLineAfterMenu);
+
         // Display the menu
         r4aMenuProcess(&context->_menu, nullptr, client);
     }
@@ -66,22 +104,29 @@ bool r4aTelnetContextCreate(NetworkClient * client,
 }
 
 //*********************************************************************
-// Clean up after the parameter object returned by r4aTelnetClientBegin
+// Clean up after the parameter object returned by r4aTelnetContextCreate
 // Inputs:
-//   contextData: Address of object allocated by r4aTelnetClientBegin
-void r4aTelnetContextDelete(void * contextData)
+//   contextAddr: Buffer to containing the address of an R4A_TELNET_CONTEXT
+//                data structure allocated by r4aTelnetContextCreate
+void r4aTelnetContextDelete(void ** contextAddr)
 {
-    delete (R4A_TELNET_CONTEXT *)contextData;
+    if (*contextAddr)
+    {
+        free (*contextAddr);
+        *contextAddr = nullptr;
+    }
 }
 
 //*********************************************************************
 // Process input from the telnet client
 // Inputs:
+//   contextData: Address of an R4A_TELNET_CONTEXT data structure allocated
+//                by r4aTelnetContextCreate
 //   client: Address of a NetworkClient object
-//   contextData: Address of object allocated by r4aTelnetClientBegin
 // Outputs:
 //   Returns true if the client is done (requests exit)
-bool r4aTelnetContextProcessInput(NetworkClient * client, void * contextData)
+bool r4aTelnetContextProcessInput(void * contextData,
+                                  NetworkClient * client)
 {
     bool clientDone;
     const char * command;
