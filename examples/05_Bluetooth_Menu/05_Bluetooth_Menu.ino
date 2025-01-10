@@ -40,7 +40,7 @@ const int menuTableEntries = sizeof(menuTable) / sizeof(menuTable[0]);
 //****************************************
 
 BluetoothSerial btSerial;
-R4A_MENU bluetoothMenu(menuTable, menuTableEntries);
+R4A_MENU bluetoothMenu;
 
 //*********************************************************************
 // Entry point for the application
@@ -50,6 +50,9 @@ void setup()
     Serial.begin(115200);
     Serial.println();
     Serial.printf("%s\r\n", __FILE__);
+
+    // Initialize the menu
+    r4aMenuBegin(&bluetoothMenu, menuTable, menuTableEntries);
 
     // Initialize the bluetooth serial port
     if (btSerial.begin(BLUETOOTH_NAME) == false)
@@ -74,7 +77,7 @@ void loop()
         // Display the initial menu upon connection
         if (connected)
         {
-            bluetoothMenu.process(nullptr, &btSerial);
+            r4aMenuProcess(&bluetoothMenu, nullptr, &btSerial);
             previouslyConnected = connected;
         }
     }

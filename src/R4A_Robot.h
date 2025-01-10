@@ -258,19 +258,6 @@ void r4aLockRelease(volatile int * lock);
 #define R4A_MENU_NONE           0
 #define R4A_MENU_MAIN           1
 
-// Forward declarations
-typedef struct _R4A_MENU_ENTRY R4A_MENU_ENTRY;
-
-typedef void (*R4A_PRE_MENU_DISPLAY)(Print * display);
-
-typedef struct _R4A_MENU_TABLE
-{
-    const char * menuName;          // Name of the menu
-    R4A_PRE_MENU_DISPLAY preMenu;   // Routine to display data before the menu
-    const R4A_MENU_ENTRY * firstEntry; // First entry in the menu
-    int32_t menuEntryCount;         // Number of entries in the table
-} R4A_MENU_TABLE;
-
 // Process a menu item
 // Inputs:
 //   menuEntry: Address of the menu entry associated with the command
@@ -291,70 +278,63 @@ typedef void (*R4A_HELP_ROUTINE)(const struct _R4A_MENU_ENTRY * menuEntry,
 
 typedef struct _R4A_MENU_ENTRY
 {
-    const char * command;           // Command: Expected serial input
-    R4A_MENU_ROUTINE menuRoutine;   // Routine to process the menu
-    intptr_t menuParameter;         // Parameter for the menu routine
-    R4A_HELP_ROUTINE helpRoutine;   // Routine to display the help message
-    int align;                      // Command length adjustment for alignment
-    const char * helpText;          // Help text to display
+    const char * command;         // Command: Expected serial input
+    R4A_MENU_ROUTINE menuRoutine; // Routine to process the menu
+    intptr_t menuParameter;       // Parameter for the menu routine
+    R4A_HELP_ROUTINE helpRoutine; // Routine to display the help message
+    int align;                    // Command length adjustment for alignment
+    const char * helpText;        // Help text to display
 } R4A_MENU_ENTRY;
 
-class R4A_MENU
+// Forward declarations
+typedef void (*R4A_PRE_MENU_DISPLAY)(Print * display);
+
+typedef struct _R4A_MENU_TABLE
 {
-  private:
+    // Menu description
+    const char * menuName;             // Name of the menu
+    R4A_PRE_MENU_DISPLAY preMenu;      // Routine to display data before the menu
+    const R4A_MENU_ENTRY * firstEntry; // First entry in the menu
+    int32_t menuEntryCount;            // Number of entries in the table
+} R4A_MENU_TABLE;
 
-    bool _debug;                     // Set true to enable debugging
-    const R4A_MENU_TABLE * _menu;            // Current menu to display and use
-    const R4A_MENU_TABLE * const _menuTable; // Address of all menu descriptions
-    const int _menuTableEntries;             // Number of entries in the menu table
+typedef struct _R4A_MENU
+{
+    // private
+    const R4A_MENU_TABLE * _menu;      // Current menu to display and use
+    const R4A_MENU_TABLE * _menuTable; // Address of all menu descriptions
+    int _menuTableEntries;             // Number of entries in the menu table
 
-  public:
+    // Menu formatting
+    bool _blankLineBeforePreMenu;    // Display a blank line before the preMenu
+    bool _blankLineBeforeMenuHeader; // Display a blank line before the menu header
+    bool _blankLineAfterMenuHeader;  // Display a blank line after the menu header
+    bool _alignCommands;             // Align the commands
+    bool _blankLineAfterMenu;        // Display a blank line after the menu
 
-    bool _blankLineBeforePreMenu;       // Display a blank line before the preMenu
-    bool _blankLineBeforeMenuHeader;    // Display a blank line before the menu header
-    bool _blankLineAfterMenuHeader;     // Display a blank line after the menu header
-    bool _alignCommands;                // Align the commands
-    bool _blankLineAfterMenu;           // Display a blank line after the menu
+    // public
+    bool _debug; // Set true to enable debugging
+} R4A_MENU;
 
-    // Constructor
-    // Inputs:
-    //   menuTable: Address of table containing the menu descriptions, the
-    //              main menu must be the first entry in the table.
-    //   menuEntries: Number of entries in the menu table
-    //   blankLineBeforePreMenu: Display a blank line before the preMenu
-    //   blankLineBeforeMenuHeader: Display a blank line before the menu header
-    //   blankLineAfterMenuHeader: Display a blank line after the menu header
-    //   alignCommands: Align the commands
-    //   blankLineAfterMenu: Display a blank line after the menu
-    R4A_MENU(const R4A_MENU_TABLE * menuTable,
-            int menuEntries,
-            bool blankLineBeforePreMenu = true,
-            bool blankLineBeforeMenuHeader = true,
-            bool blankLineAfterMenuHeader = false,
-            bool alignCommands = true,
-            bool blankLineAfterMenu = false);
-
-    // Enable or disable debugging
-    // Inputs:
-    //   enable: Set true to enable debugging, false disables debugging
-    void debug(bool enable);
-
-    // Display the menu object contents
-    // Inputs:
-    //   display: Address of the Print object for output
-    void display(Print * display);
-
-    // Process a menu command when specified or display the menu when command
-    // is nullptr.
-    // Inputs:
-    //   menuTable: Address of the address of the menuTable (description of the menu)
-    //   command: Command string
-    //   display: Address of the Print object for output
-    // Outputs:
-    //   True when exiting the menu system, false if still in the menu system
-    bool process(const char * command,
-                 Print * display = &Serial);
-};
+// Initialize the R4A_MENU data structure
+// Inputs:
+//   menu: Address of an R4A_MENU data structure
+//   menuTable: Address of table containing the menu descriptions, the
+//              main menu must be the first entry in the table.
+//   menuEntries: Number of entries in the menu table
+//   blankLineBeforePreMenu: Display a blank line before the preMenu
+//   blankLineBeforeMenuHeader: Display a blank line before the menu header
+//   blankLineAfterMenuHeader: Display a blank line after the menu header
+//   alignCommands: Align the commands
+//   blankLineAfterMenu: Display a blank line after the menu
+void r4aMenuBegin(R4A_MENU * menu,
+                  const R4A_MENU_TABLE * menuTable,
+                  int menuEntries,
+                  bool blankLineBeforePreMenu = true,
+                  bool blankLineBeforeMenuHeader = true,
+                  bool blankLineAfterMenuHeader = false,
+                  bool alignCommands = true,
+                  bool blankLineAfterMenu = false);
 
 // Display the boolean as enabled or disabled
 // Inputs:
@@ -373,6 +353,12 @@ void r4aMenuBoolToggle(const R4A_MENU_ENTRY * menuEntry,
                        const char * command,
                        Print * display);
 
+// Display the menu object contents
+// Inputs:
+//   menu: Address of an R4A_MENU data structure
+//   display: Address of the Print object for output
+void r4aMenuDisplay(R4A_MENU * menu, Print * display);
+
 // Get the string of parameters
 // Inputs:
 //   menuEntry: Address of the object describing the menu entry
@@ -388,6 +374,19 @@ String r4aMenuGetParameters(const struct _R4A_MENU_ENTRY * menuEntry,
 void r4aMenuHelpSuffix(const struct _R4A_MENU_ENTRY * menuEntry,
                        const char * align,
                        Print * display);
+
+// Process a menu command when specified or display the menu when command
+// is nullptr.
+// Inputs:
+//   menu: Address of an R4A_MENU data structure
+//   menuTable: Address of the address of the menuTable (description of the menu)
+//   command: Command string
+//   display: Address of the Print object for output
+// Outputs:
+//   True when exiting the menu system, false if still in the menu system
+bool r4aMenuProcess(R4A_MENU * menu,
+                    const char * command,
+                    Print * display = &Serial);
 
 //****************************************
 // LED Menu API

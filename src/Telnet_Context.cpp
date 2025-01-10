@@ -27,11 +27,11 @@ R4A_TELNET_CONTEXT::R4A_TELNET_CONTEXT(const R4A_MENU_TABLE * menuTable,
                                        bool blankLineAfterMenuHeader,
                                        bool alignCommands,
                                        bool blankLineAfterMenu)
-    : _command{String("")}, _displayOptions{displayOptions}, _echo{echo},
-      _menu{R4A_MENU(menuTable, menuTableEntries, blankLineBeforePreMenu,
-            blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
-            alignCommands, blankLineAfterMenu)}
+    : _command{String("")}, _displayOptions{displayOptions}, _echo{echo}
 {
+    r4aMenuBegin(&_menu, menuTable, menuTableEntries, blankLineBeforePreMenu,
+            blankLineBeforeMenuHeader, blankLineAfterMenuHeader,
+            alignCommands, blankLineAfterMenu);
 }
 
 //*********************************************************************
@@ -59,7 +59,7 @@ bool r4aTelnetContextCreate(NetworkClient * client,
     if (contextData)
     {
         // Display the menu
-        context->_menu.process(nullptr, client);
+        r4aMenuProcess(&context->_menu, nullptr, client);
     }
 
     return (context != nullptr);
@@ -128,10 +128,10 @@ bool r4aTelnetContextProcessInput(NetworkClient * client, void * contextData)
     {
         // Process the command
         command = line->c_str();
-        clientDone = context->_menu.process(command, client);
+        clientDone = r4aMenuProcess(&context->_menu, command, client);
         if (!clientDone)
             // Display the menu
-            context->_menu.process(nullptr, client);
+            r4aMenuProcess(&context->_menu, nullptr, client);
 
         // Start building the next command
         context->_command = "";

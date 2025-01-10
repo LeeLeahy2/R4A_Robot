@@ -101,9 +101,9 @@ void r4aSerialMenu(R4A_MENU * menu)
         command = line->c_str();
 
         // Process the command
-        if (!menu->process(command, &Serial))
+        if (!r4aMenuProcess(menu, command, &Serial))
             // Display the menu
-            menu->process(nullptr, &Serial);
+            r4aMenuProcess(menu, nullptr, &Serial);
 
         // Start building the next command
         serialBuffer = "";

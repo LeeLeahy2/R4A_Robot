@@ -30,7 +30,7 @@ const int menuTableEntries = sizeof(menuTable) / sizeof(menuTable[0]);
 // Locals
 //****************************************
 
-R4A_MENU serialMenu(menuTable, menuTableEntries);
+R4A_MENU serialMenu;
 
 //*********************************************************************
 // Entry point for the application
@@ -40,6 +40,9 @@ void setup()
     Serial.begin(115200);
     Serial.println();
     Serial.println("Example 01_Serial_Menu");
+
+    // Initialize the menu
+    r4aMenuBegin(&serialMenu, menuTable, menuTableEntries);
 }
 
 //*********************************************************************

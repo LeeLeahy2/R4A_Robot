@@ -119,7 +119,7 @@ const R4A_MENU_TABLE menuTable24[] =
 };
 const int menuTable24Entries = sizeof(menuTable24) / sizeof(menuTable24[0]);
 
-R4A_MENU serialMenu(menuTable24, menuTable24Entries);
+R4A_MENU serialMenu;
 
 //*********************************************************************
 // Entry point for the application
@@ -128,6 +128,9 @@ void setup()
     Serial.begin(115200);
     Serial.println();
     Serial.printf("%s\r\n", __FILE__);
+
+    // Initialize the menu
+    r4aMenuBegin(&serialMenu, menuTable24, menuTable24Entries);
 
 /*
     // Start the WiFi network

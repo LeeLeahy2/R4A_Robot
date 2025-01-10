@@ -87,10 +87,10 @@ bool r4aBluetoothMenu(R4A_MENU * menu, BluetoothSerial * port)
         command = line->c_str();
 
         // Process the command
-        done = menu->process(command, port);
+        done = r4aMenuProcess(menu, command, port);
         if (!done)
             // Display the menu
-            menu->process(nullptr, port);
+            r4aMenuProcess(menu, nullptr, port);
 
         // Start building the next command
         serialBuffer = "";
