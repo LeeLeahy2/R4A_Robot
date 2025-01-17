@@ -396,7 +396,7 @@ void r4aLEDUpdate(bool updateRequest)
     }
 
     // Output the color data to the LEDs
-    if (updateRequest)
+    if (updateRequest && r4aLEDSpi)
         r4aLEDSpi->transfer(r4aLEDSpi, r4aLEDTxDmaBuffer, nullptr, length);
 }
 
