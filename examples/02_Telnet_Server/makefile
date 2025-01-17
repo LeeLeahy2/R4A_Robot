@@ -14,8 +14,11 @@ SHELL=/bin/bash
 
 SKETCH=02_Telnet_Server
 ESP32_CHIP=esp32wrover
-ESP32_VERSION=2.0.11
 PARTITION_FILE_NAME=huge_app
+
+ESP_CORE_VERSION=3.1.1
+ESPTOOL_VERSION=4.9.dev3
+IDF_VERSION=idf-release_v5.3-cfea4f7c-v1
 
 ##########
 # OS specific paths
@@ -28,15 +31,16 @@ ifeq ($(OS),Windows_NT)
 OS_NAME=Windows NT
 
 USER_DIRECTORY_PATH=C:\Users\$(USERNAME)\
+EXAMPLE_PATH=..\
 
 ARDUINO_PATH=$(USER_DIRECTORY_PATH)Documents\Arduino\
 ARDUINO_LIBRARY_PATH=$(ARDUINO_PATH)libraries\
 BUILD_PATH=build\
 BIN_PATH=$BUILD_PATH)esp32.esp32.$(ESP32_CHIP)\
-BOOT_LOADER_PATH=$(HOME_BOARD_PATH)$(ESP32_VERSION)\tools\partitions\
+BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_Robot\binaries\
 HOME_BOARD_PATH=$(USER_DIRECTORY_PATH)AppData\Local\Arduino15\packages\esp32\
-ESP_IDF_PATH=$(HOME_BOARD_PATH)tools\esp32-arduino-libs\
-ESPTOOL_PATH=$(USER_DIRECTORY_PATH)\.arduino15\packages\esp32\tools\esptool_py\4.5.1\
+ESP_IDF_PATH=$(HOME_BOARD_PATH)tools\esp32-arduino-libs\$(IDF_VERSION)\
+ESPTOOL_PATH=$(HOME_BOARD_PATH)\.arduino15\packages\esp32\tools\esptool_py\$(ESPTOOL_VERSION)\
 
 # Windows NT utilities
 ARDUINO_CLI=~/Arduino/arduino-cli
@@ -58,15 +62,16 @@ ifeq ($(UNAME_S),Darwin)
 OS_NAME=Mac OS
 
 USER_DIRECTORY_PATH=($HOME)/
+EXAMPLE_PATH=../
 
 ARDUINO_PATH=$(USER_DIRECTORY_PATH)Documents/Arduino/
 ARDUINO_LIBRARY_PATH=$(ARDUINO_PATH)libraries/
 BUILD_PATH=build/
 BIN_PATH=$(BUILD_PATH)esp32.esp32.$(ESP32_CHIP)/
-BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_ESP32/binaries/
+BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_Robot/binaries/
 HOME_BOARD_PATH=$(USER_DIRECTORY_PATH)AppData\Local\Arduino15\packages\esp32\
-ESP_IDF_PATH=$(HOME_BOARD_PATH)tools\esp32-arduino-libs\
-ESPTOOL_PATH=$(USER_DIRECTORY_PATH)\.arduino15\packages\esp32\tools\esptool_py\4.5.1\
+ESP_IDF_PATH=$(HOME_BOARD_PATH)tools/esp32-arduino-libs/$(IDF_VERSION)/
+ESPTOOL_PATH=$(HOME_BOARD_PATH)tools/esptool_py/$(ESPTOOL_VERSION)/
 
 # Mac utilities
 ARDUINO_CLI=arduino-cli
@@ -86,15 +91,16 @@ else
 OS_NAME=Linux
 
 USER_DIRECTORY_PATH=~/
+EXAMPLE_PATH=../
 
 ARDUINO_PATH=$(USER_DIRECTORY_PATH)Arduino/
 ARDUINO_LIBRARY_PATH=$(ARDUINO_PATH)libraries/
 BUILD_PATH=build/
 BIN_PATH=$(BUILD_PATH)esp32.esp32.$(ESP32_CHIP)/
+BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_Robot/binaries/
 HOME_BOARD_PATH=$(USER_DIRECTORY_PATH).arduino15/packages/esp32/
-BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_ESP32/binaries/
-ESP_IDF_PATH=$(HOME_BOARD_PATH)tools/esp32-arduino-libs/
-ESPTOOL_PATH=$(USER_DIRECTORY_PATH).arduino15/packages/esp32/tools/esptool_py/4.5.1/
+ESP_IDF_PATH=$(HOME_BOARD_PATH)tools/esp32-arduino-libs/$(IDF_VERSION)/
+ESPTOOL_PATH=$(USER_DIRECTORY_PATH).arduino15/packages/esp32/tools/esptool_py/$(ESPTOOL_VERSION)/
 
 # Linux utilities
 ARDUINO_CLI=$(USER_DIRECTORY_PATH)Arduino/arduino-cli
@@ -131,18 +137,30 @@ all: $(EXECUTABLES)
 
 Car:	$(BIN_FILE)
 
-########
-# Robot Firmware
+##########
+# Configure the Arduino environment
+##########
+
+.PHONY: arduino-config
+
+arduino-config:
+	$(ARDUINO_CLI) config init --overwrite --additional-urls "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json,https://espressif.github.io/arduino-esp32/package_esp32_dev_index.json"
+
+##########
+# Get the ESP32 core
 ##########
 
 .PHONY: core-update
-
-ESP_CORE_VERSION=3.0.7
 
 core-update:
 	$(ARDUINO_CLI) core update-index
 	$(ARDUINO_CLI) core install esp32:esp32@$(ESP_CORE_VERSION)
 
+########
+# Robot Firmware
+##########
+
+#DEBUG_LEVEL=verbose
 #DEBUG_LEVEL=debug
 DEBUG_LEVEL=none
 
