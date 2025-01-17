@@ -56,9 +56,14 @@ void R4A_ROBOT::initialDelay(uint32_t currentMsec)
         deltaTime = currentMsec - _startMsec;
         if (deltaTime >= 0)
         {
+            log_v("Robot: Start delay complete");
+
             // Notify the challenge of the start
             if (challenge->_start)
+            {
+                log_v("Robot: Calling challenge->_start");
                 challenge->_start(challenge);
+            }
 
             // Switch to running the robot
             if (SWITCH_STATE(STATE_RUNNING))
@@ -92,6 +97,8 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     R4A_ROBOT_CHALLENGE * previousChallenge;
     uint32_t seconds;
 
+    log_v("Robot: R4A_ROBOT::init called");
+
     // Only initialize the robot once
     previousChallenge = (R4A_ROBOT_CHALLENGE *)_challenge;
     if (previousChallenge)
@@ -119,7 +126,7 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     _endMsec = _startMsec + (duration * R4A_MILLISECONDS_IN_A_SECOND);
 
     // Display the start delay time
-    display->printf("Delaying %ld seconds before starting %s\r\n",
+    display->printf("Robot: Delaying %ld seconds before starting %s\r\n",
                     _startDelayMsec / 1000, challenge->_name);
 
     // Split the duration
@@ -130,19 +137,25 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
     minutes -= hours * 60;
 
     // Display the time
-    display->printf("%s challenge duration %ld:%02ld:%02ld\r\n",
+    display->printf("Robot: %s challenge duration %ld:%02ld:%02ld\r\n",
                     challenge->_name, hours, minutes, seconds);
     if (_displayTime)
         _displayTime(_startMsec - _nextDisplayMsec);
 
     // Call the initialization routine
     if (challenge->_init)
+    {
+        log_v("Robot: Calling challenge->_init");
         challenge->_init(challenge);
+    }
 
     // Start the robot
     _challenge = challenge;    // Update the LED colors
+
+    log_v("Robot: Calling r4aLEDUpdate");
     r4aLEDUpdate(true);
 
+    log_v("Robot: Switching state to COUND_DOWN");
     SWITCH_STATE(STATE_COUNT_DOWN);
 
     // Release the synchronation with the stop routine
@@ -168,8 +181,12 @@ void R4A_ROBOT::running(uint32_t currentMsec)
             // Perform the robot challenge
             challenge->_challenge(challenge);
         else
+        {
+            log_v("Robot: Challenge duration has expired");
+
             // Stop the robot
             stop(currentMsec);
+        }
     }
 
     // Release the synchronation with the stop routine
@@ -187,22 +204,30 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
     uint32_t seconds;
     uint8_t state;
 
+    log_v("Robot: R4A_ROBOT::stop called");
+
     // Stop the robot just once by setting _state to STATE_STOP
+    log_v("Robot: Switching state to STOP");
     state = SWITCH_STATE(STATE_STOP);
     if ((state == STATE_RUNNING) || (state == STATE_COUNT_DOWN))
     {
         _stopMsec = currentMsec;
 
         // Wait for the I2C bus to be free, robot._core 0 idle
+        log_v("Robot: Wait for I2C to be idle");
         if (_core != xPortGetCoreID())
             while (_busy)
             {
             }
+        log_v("Robot: I2C is idle");
 
         // Call the challenge stop routine to stop the motors
         challenge = (R4A_ROBOT_CHALLENGE *)_challenge;
         if (challenge->_stop)
+        {
+            log_v("Robot: Calling challenge->_stop");
             challenge->_stop(challenge);
+        }
 
         // Display the runtime
         if (display)
@@ -215,13 +240,16 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
             seconds -= minutes * R4A_SECONDS_IN_A_MINUTE;
             hours = minutes / R4A_MINUTES_IN_AN_HOUR;
             minutes -= hours * R4A_MINUTES_IN_AN_HOUR;
-            display->printf("Stopped %s, runtime: %ld:%02ld:%02ld.%03ld\r\n",
+            display->printf("Robot: Stopped %s, runtime: %ld:%02ld:%02ld.%03ld\r\n",
                             challenge->_name, hours, minutes, seconds, milliseconds);
         }
 
         // Display the runtime
         if (_displayTime)
-        _displayTime(_stopMsec - _startMsec);
+        {
+            log_v("Robot: Calling _displayTime");
+            _displayTime(_stopMsec - _startMsec);
+        }
 
         // Done with this challenge
         _challenge = nullptr;
@@ -241,6 +269,7 @@ void R4A_ROBOT::stopped(uint32_t currentMsec)
     if ((currentMsec - _stopMsec) >= _afterRunMsec)
     {
         r4aLEDsOff();
+        log_v("Robot: Switching to IDLE state");
         SWITCH_STATE(STATE_IDLE);
     }
 }
