@@ -45,6 +45,7 @@ void R4A_ROBOT::initialDelay(uint32_t currentMsec)
 {
     R4A_ROBOT_CHALLENGE * challenge;
     int32_t deltaTime;
+    uint8_t previousState;
 
     // Synchronize with the stop routine
     _busy = true;
@@ -66,8 +67,18 @@ void R4A_ROBOT::initialDelay(uint32_t currentMsec)
             }
 
             // Switch to running the robot
-            if (SWITCH_STATE(STATE_RUNNING))
+            previousState = SWITCH_STATE(STATE_RUNNING);
+            if (previousState == STATE_COUNT_DOWN)
+            {
+                log_v("Robot: Switched to RUNNING state");
                 running(currentMsec);
+            }
+            else
+            {
+                // Restore the state
+                SWITCH_STATE(previousState);
+                log_v("Robot: Switched to previous state, %d", previousState);
+            }
         }
         else
         {
