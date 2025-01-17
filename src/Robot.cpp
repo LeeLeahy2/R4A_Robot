@@ -57,7 +57,8 @@ void R4A_ROBOT::initialDelay(uint32_t currentMsec)
         if (deltaTime >= 0)
         {
             // Notify the challenge of the start
-            challenge->_start(challenge);
+            if (challenge->_start)
+                challenge->_start(challenge);
 
             // Switch to running the robot
             if (SWITCH_STATE(STATE_RUNNING))
@@ -99,6 +100,13 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
         return false;
     }
 
+    // Prevent initialization when challenge is not specified
+    if (!challenge->_challenge)
+    {
+        display->printf("ERROR: Robot challenge not specified!\r\n");
+        return false;
+    }
+
     // Synchronize with the stop routine
     _busy = true;
 
@@ -128,7 +136,8 @@ bool R4A_ROBOT::init(R4A_ROBOT_CHALLENGE * challenge,
         _displayTime(_startMsec - _nextDisplayMsec);
 
     // Call the initialization routine
-    challenge->_init(challenge);
+    if (challenge->_init)
+        challenge->_init(challenge);
 
     // Start the robot
     _challenge = challenge;    // Update the LED colors
@@ -192,7 +201,8 @@ void R4A_ROBOT::stop(uint32_t currentMsec, Print * display)
 
         // Call the challenge stop routine to stop the motors
         challenge = (R4A_ROBOT_CHALLENGE *)_challenge;
-        challenge->_stop(challenge);
+        if (challenge->_stop)
+            challenge->_stop(challenge);
 
         // Display the runtime
         if (display)
