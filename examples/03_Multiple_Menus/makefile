@@ -14,7 +14,6 @@ SHELL=/bin/bash
 
 SKETCH=03_Multiple_Menus
 ESP32_CHIP=esp32wrover
-ESP32_VERSION=2.0.11
 PARTITION_FILE_NAME=huge_app
 
 ESP_CORE_VERSION=3.1.1
@@ -38,7 +37,7 @@ ARDUINO_PATH=$(USER_DIRECTORY_PATH)Documents\Arduino\
 ARDUINO_LIBRARY_PATH=$(ARDUINO_PATH)libraries\
 BUILD_PATH=build\
 BIN_PATH=$BUILD_PATH)esp32.esp32.$(ESP32_CHIP)\
-BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_Robot\binaries\
+BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_ESP32\binaries\
 HOME_BOARD_PATH=$(USER_DIRECTORY_PATH)AppData\Local\Arduino15\packages\esp32\
 ESP_IDF_PATH=$(HOME_BOARD_PATH)tools\esp32-arduino-libs\$(IDF_VERSION)\
 ESPTOOL_PATH=$(HOME_BOARD_PATH)\.arduino15\packages\esp32\tools\esptool_py\$(ESPTOOL_VERSION)\
@@ -69,7 +68,7 @@ ARDUINO_PATH=$(USER_DIRECTORY_PATH)Documents/Arduino/
 ARDUINO_LIBRARY_PATH=$(ARDUINO_PATH)libraries/
 BUILD_PATH=build/
 BIN_PATH=$(BUILD_PATH)esp32.esp32.$(ESP32_CHIP)/
-BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_Robot/binaries/
+BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_ESP32/binaries/
 HOME_BOARD_PATH=$(USER_DIRECTORY_PATH)AppData/Local/Arduino15/packages/esp32/
 ESP_IDF_PATH=$(HOME_BOARD_PATH)tools/esp32-arduino-libs/$(IDF_VERSION)/
 ESPTOOL_PATH=$(HOME_BOARD_PATH)tools/esptool_py/$(ESPTOOL_VERSION)/
@@ -98,7 +97,7 @@ ARDUINO_PATH=$(USER_DIRECTORY_PATH)Arduino/
 ARDUINO_LIBRARY_PATH=$(ARDUINO_PATH)libraries/
 BUILD_PATH=build/
 BIN_PATH=$(BUILD_PATH)esp32.esp32.$(ESP32_CHIP)/
-BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_Robot/binaries/
+BOOT_LOADER_PATH=$(ARDUINO_LIBRARY_PATH)R4A_ESP32/binaries/
 HOME_BOARD_PATH=$(USER_DIRECTORY_PATH).arduino15/packages/esp32/
 ESP_IDF_PATH=$(HOME_BOARD_PATH)tools/esp32-arduino-libs/$(IDF_VERSION)/
 ESPTOOL_PATH=$(USER_DIRECTORY_PATH).arduino15/packages/esp32/tools/esptool_py/$(ESPTOOL_VERSION)/
@@ -161,9 +160,11 @@ core-update:
 # Robot Firmware
 ##########
 
-#DEBUG_LEVEL=verbose
+DEBUG_LEVEL=verbose
 #DEBUG_LEVEL=debug
-DEBUG_LEVEL=none
+#DEBUG_LEVEL=warn
+#DEBUG_LEVEL=error
+#DEBUG_LEVEL=none
 
 $(BIN_FILE):	$(SKETCH).ino   *.ino   *.h   makefile
 	@$(CLEAR)
@@ -183,7 +184,7 @@ $(BIN_FILE):	$(SKETCH).ino   *.ino   *.h   makefile
 .PHONY: upload
 
 upload:	$(BIN_FILE)
-	python3 $(ESPTOOL_PATH)esptool.py \
+	$(ESPTOOL_PATH)esptool \
 		--chip   esp32 \
 		--port   $(TERMINAL_PORT) \
 		--baud   921600 \
