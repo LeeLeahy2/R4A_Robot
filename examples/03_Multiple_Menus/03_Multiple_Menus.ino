@@ -235,6 +235,7 @@ bool contextCreate23(void ** contextData, NetworkClient * client)
 {
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
+    log_v("Telnet Client: contextCreate23 calling r4aTelnetContextCreate");
     return r4aTelnetContextCreate(contextData,
                                   client,
                                   menuTable23,
@@ -253,6 +254,7 @@ bool contextCreate24(void ** contextData, NetworkClient * client)
 {
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
+    log_v("Telnet Client: contextCreate24 calling r4aTelnetContextCreate");
     return r4aTelnetContextCreate(contextData,
                                   client,
                                   menuTable24,

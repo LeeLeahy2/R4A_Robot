@@ -29,6 +29,7 @@ void r4aMenuBegin(R4A_MENU * menu,
                   bool blankLineAfterMenu)
 {
     // Initialize the R4A_MENU data structure
+    log_v("r4aMenuBegin: menu %p", menu);
     memset(menu, 0, sizeof(*menu));
     menu->_menuTable = menuTable;
     menu->_menuTableEntries = menuEntries;
@@ -120,6 +121,7 @@ bool r4aMenuProcess(R4A_MENU * menu,
     const char * spaces = "                                                  ";
     int spaceCount;
 
+    log_v("r4aMenuProcess: menu %p, command %p, display %p", menu, command, display);
     if (menu->_debug)
     {
         Serial.printf("command: %p %s%s%s\r\n",
