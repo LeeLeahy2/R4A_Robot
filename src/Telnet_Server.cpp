@@ -19,13 +19,6 @@ R4A_TELNET_SERVER::R4A_TELNET_SERVER(uint16_t maxClients,
       _maxClients{maxClients}, _port{0}, _processInput{processInput},
       _server{nullptr}
 {
-    size_t length;
-
-    // Allocate the client list
-    length = _maxClients * sizeof(R4A_TELNET_CLIENT *);
-    _clients = (R4A_TELNET_CLIENT **)malloc(length);
-    if (_clients)
-        memset(_clients, 0, length);
 }
 
 //*********************************************************************
@@ -49,24 +42,47 @@ R4A_TELNET_SERVER::~R4A_TELNET_SERVER()
 // upon failure.
 bool R4A_TELNET_SERVER::begin(IPAddress ipAddress, uint16_t port)
 {
+    size_t length;
+
+    log_v("R4A_TELNET_SERVER::begin called");
+
     // Determine if the server was already initialized
-    if (_server == nullptr)
+    while (_server == nullptr)
     {
         // Save the port for display
         _ipAddress = ipAddress;
         _port = port;
 
-        // Allocate the network object
-        _server = new NetworkServer(_port);
-        if (_server)
+        // Allocate the client list
+        length = _maxClients * sizeof(R4A_TELNET_CLIENT *);
+        log_v("Telnet Server: Allocating R4A_TELNET_CLIENT array, %d bytes", length);
+        _clients = (R4A_TELNET_CLIENT **)malloc(length);
+        if (!_clients)
         {
-            // Initialize the network server object
-            _server->begin();
-            _server->setNoDelay(true);
+            Serial.printf("ERROR: Failed to allocate R4A_TELNET_CLIENT list!\r\n");
+            break;
         }
+        memset(_clients, 0, length);
+
+        // Allocate the network object
+        log_v("Telnet Server: Allocating NetworkServer object");
+        _server = new NetworkServer(_port);
+        log_v("Telnet Server: Allocated NetworkServer object %p", _server);
+        if (!_server)
+        {
+            Serial.printf("ERROR: Failed to allocate NetworkServer object!\r\n");
+            break;
+        }
+
+        // Initialize the network server object
+        log_v("TelnetServer: Initializing the NetworkServer");
+        _server->begin();
+        _server->setNoDelay(true);
+        break;
     }
 
     // Notify the caller of the initialization status
+    log_v("R4A_TELNET_SERVER::begin returning %s", _server ? "true" : "false");
     return (_server != nullptr);
 }
 
@@ -76,6 +92,7 @@ void R4A_TELNET_SERVER::closeClient(uint16_t i)
 {
     if (_clients && _clients[i])
     {
+        log_v("Telnet Server: Deleting client %d (%p)", i, _clients[i]);
         _activeClients -= 1;
         delete _clients[i];
         _clients[i] = nullptr;
@@ -100,6 +117,7 @@ void R4A_TELNET_SERVER::end()
     // Done with the server
     if (_server)
     {
+        log_v("Telnet Server: Deleting server %p", _server);
         delete _server;
         _server = nullptr;
         _ipAddress = IPAddress{(uint32_t)0};
