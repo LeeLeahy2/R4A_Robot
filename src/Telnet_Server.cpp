@@ -161,30 +161,33 @@ void R4A_TELNET_SERVER::newClient()
     uint16_t i;
 
     // Get the remote client connection
+    log_v("Telent Server: Calling accept");
     client = _server->accept();
-
-    // Look for a free slot
-    for (i = 0; i < _maxClients; i++)
+    if (client)
     {
-        // If a free slot is available, allocate a new client
-        if (!_clients[i])
+        // Look for a free slot
+        for (i = 0; i < _maxClients; i++)
         {
-            // Fill the slot with the telnet client
-            _clients[i] = new R4A_TELNET_CLIENT(client,
-                                                _processInput,
-                                                _contextCreate,
-                                                _contextDelete);
-            if (_clients[i])
-                _activeClients += 1;
-            else
-                client.stop();
-            break;
+            // If a free slot is available, allocate a new client
+            if (!_clients[i])
+            {
+                // Fill the slot with the telnet client
+                _clients[i] = new R4A_TELNET_CLIENT(client,
+                                                    _processInput,
+                                                    _contextCreate,
+                                                    _contextDelete);
+                if (_clients[i])
+                    _activeClients += 1;
+                else
+                    client.stop();
+                break;
+            }
         }
-    }
 
-    // If no free slots then reject incoming server connection request
-    if (i >= _maxClients)
-        client.stop();
+        // If no free slots then reject incoming server connection request
+        if (i >= _maxClients)
+            client.stop();
+    }
 }
 
 //*********************************************************************
