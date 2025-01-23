@@ -740,12 +740,14 @@ String * r4aReadLine(bool echo, String * buffer, NetworkClient * port);
 //   object: Address of a R4A_ROBOT_CHALLENGE data structure
 typedef void (* R4A_ROBOT_CHALLENGE_ROUTINE)(struct _R4A_ROBOT_CHALLENGE * object);
 
+// Initialize the robot challenge
 // The robotStart calls this routine before switching to the initial
 // delay state.
 // Inputs:
 //   object: Address of a R4A_ROBOT_CHALLENGE data structure
 typedef void (* R4A_ROBOT_CHALLENGE_INIT)(struct _R4A_ROBOT_CHALLENGE * object);
 
+// Start the robot challenge
 // The initial delay routine calls this routine just before calling
 // the challenge routine for the first time.
 // Inputs:
@@ -1035,6 +1037,11 @@ class R4A_TELNET_CLIENT
 
     // Break the client connection
     void disconnect();
+
+    // Determine if the client is connected
+    // Outputs:
+    //   Returns true if the client is connected
+    bool isConnected();
 
     // Process the incoming telnet client data
     // Outputs:

@@ -38,6 +38,20 @@ void R4A_TELNET_CLIENT::disconnect()
 }
 
 //*********************************************************************
+// Determine if the client is connected
+// Outputs:
+//   Returns true if the client is connected
+bool R4A_TELNET_CLIENT::isConnected()
+{
+    bool status;
+
+    if (!_client)
+        return false;
+    status = _client.connected();
+    return status;
+}
+
+//*********************************************************************
 // Process the incoming telnet client data
 bool R4A_TELNET_CLIENT::processInput()
 {
