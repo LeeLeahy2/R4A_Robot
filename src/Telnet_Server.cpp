@@ -126,6 +126,26 @@ void R4A_TELNET_SERVER::end()
 }
 
 //*********************************************************************
+// Determine if the telnet server has any clients
+// Outputs:
+//   Returns true if one or more clients are connected.
+bool R4A_TELNET_SERVER::hasClient()
+{
+    R4A_TELNET_CLIENT * client;
+
+    for (int i = 0; i < _maxClients; i++)
+    {
+        if (_clients)
+        {
+            client = _clients[i];
+            if (client && client->isConnected())
+                return true;
+        }
+    }
+    return false;
+}
+
+//*********************************************************************
 // Get the IP address
 IPAddress R4A_TELNET_SERVER::ipAddress(void)
 {

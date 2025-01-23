@@ -1192,6 +1192,11 @@ class R4A_TELNET_SERVER
     // Restore state to just after constructor execution
     void end();
 
+    // Determine if the telnet server has any clients
+    // Outputs:
+    //   Returns true if one or more clients are connected.
+    bool hasClient();
+
     // Get the IP address
     IPAddress ipAddress(void);
 
