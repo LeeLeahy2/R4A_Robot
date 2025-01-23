@@ -122,6 +122,7 @@ size_t R4A_TELNET_CLIENT::write(uint8_t data)
     // Output the data if possible
     if (_client.connected())
         return _client.write(data);
+    return 0;
 }
 
 //*********************************************************************
