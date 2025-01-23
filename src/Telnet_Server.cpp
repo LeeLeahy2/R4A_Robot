@@ -271,3 +271,50 @@ void R4A_TELNET_SERVER::update(bool connected)
         }
     }
 }
+
+//*********************************************************************
+// Write to all clients
+// Inputs:
+//   data: Data byte to write to the clients
+// Outputs:
+//   Returns the number of bytes written
+size_t R4A_TELNET_SERVER::write(uint8_t data)
+{
+    R4A_TELNET_CLIENT * client;
+
+    for (int i = 0; i < _maxClients; i++)
+    {
+        client = _clients[i];
+        if (client)
+        {
+            // Output the data if possible
+            if (client->isConnected())
+                client->write(data);
+        }
+    }
+    return 1;
+}
+
+//*********************************************************************
+// Write to all clients
+// Inputs:
+//   data: Address of the data to write to the clients
+//   length: Number of data bytes to write
+// Outputs:
+//   Returns the number of bytes written
+size_t R4A_TELNET_SERVER::write(const uint8_t * data, size_t length)
+{
+    R4A_TELNET_CLIENT * client;
+
+    for (int i = 0; i < _maxClients; i++)
+    {
+        client = _clients[i];
+        if (client)
+        {
+            // Output the data if possible
+            if (client->isConnected())
+                client->write(data, length);
+        }
+    }
+    return length;
+}

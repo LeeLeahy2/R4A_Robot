@@ -1058,6 +1058,21 @@ class R4A_TELNET_CLIENT
     // Outputs:
     //   Returns the port number used by the remote telnet client.
     uint16_t remotePort();
+
+    // Write to all clients
+    // Inputs:
+    //   data: Data byte to write to the clients
+    // Outputs:
+    //   Returns the number of bytes written
+    size_t write(uint8_t data);
+
+    // Write to all clients
+    // Inputs:
+    //   data: Address of the data to write to the clients
+    //   length: Number of data bytes to write
+    // Outputs:
+    //   Returns the number of bytes written
+    size_t write(const uint8_t * data, size_t length);
 };
 
 //*********************************************************************
@@ -1141,7 +1156,7 @@ bool r4aTelnetContextProcessInput(void * contextData,
 // Telnet Server API
 //****************************************
 
-class R4A_TELNET_SERVER
+class R4A_TELNET_SERVER : public Print
 {
   private:
 
@@ -1218,6 +1233,21 @@ class R4A_TELNET_SERVER
     //   connected: True when the network is connected and false upon
     //              network failure
     void update(bool connected);
+
+    // Write to all clients
+    // Inputs:
+    //   data: Data byte to write to the clients
+    // Outputs:
+    //   Returns the number of bytes written
+    size_t write(uint8_t data);
+
+    // Write to all clients
+    // Inputs:
+    //   data: Address of the data to write to the clients
+    //   length: Number of data bytes to write
+    // Outputs:
+    //   Returns the number of bytes written
+    size_t write(const uint8_t * data, size_t length);
 };
 
 //****************************************

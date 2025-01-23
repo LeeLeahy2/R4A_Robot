@@ -110,3 +110,30 @@ uint16_t R4A_TELNET_CLIENT::remotePort()
 {
     return _client.remotePort();
 }
+
+//*********************************************************************
+// Write to all clients
+// Inputs:
+//   data: Data byte to write to the clients
+// Outputs:
+//   Returns the number of bytes written
+size_t R4A_TELNET_CLIENT::write(uint8_t data)
+{
+    // Output the data if possible
+    if (_client.connected())
+        return _client.write(data);
+}
+
+//*********************************************************************
+// Write to all clients
+// Inputs:
+//   data: Address of the data to write to the clients
+//   length: Number of data bytes to write
+// Outputs:
+//   Returns the number of bytes written
+size_t R4A_TELNET_CLIENT::write(const uint8_t * data, size_t length)
+{
+    // Output the data if possible
+    if (_client.connected())
+        return _client.write(data, length);
+}
