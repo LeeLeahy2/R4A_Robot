@@ -427,6 +427,11 @@ void r4aMenuHelpSuffix(const struct _R4A_MENU_ENTRY * menuEntry,
                        const char * align,
                        Print * display);
 
+// Determine if the menu system is active
+// Outputs:
+//   Returns true when the menu system is active and false when inactive
+bool r4aMenuIsActive();
+
 // Process a menu command when specified or display the menu when command
 // is nullptr.
 // Inputs:

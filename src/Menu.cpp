@@ -7,6 +7,12 @@
 
 #include "R4A_Robot.h"
 
+//****************************************
+// Locals
+//****************************************
+
+static int32_t r4aMenuUsers;
+
 //*********************************************************************
 // Constructor
 // Inputs:
@@ -104,6 +110,14 @@ void r4aMenuHelpSuffix(const struct _R4A_MENU_ENTRY * menuEntry,
 }
 
 //*********************************************************************
+// Determine if the menu system is active
+// Returns true when the menu system is active and false when inactive
+bool r4aMenuIsActive()
+{
+    return r4aMenuUsers ? true : false;
+}
+
+//*********************************************************************
 // Process the menu command or display the menu
 // Returns true when exiting the menu system
 bool r4aMenuProcess(R4A_MENU * menu,
@@ -136,6 +150,8 @@ bool r4aMenuProcess(R4A_MENU * menu,
     // Always start with the main menu
     if (!menu->_menu)
     {
+        // https://gcc.gnu.org/wiki/Atomic/GCCMM/LIbrary
+        r4aAtomicAdd32(&r4aMenuUsers, 1);
         menu->_menu = &menu->_menuTable[0];
         if (menu->_debug)
             Serial.printf("_menu: %p\r\n", menu->_menu);
@@ -210,7 +226,11 @@ bool r4aMenuProcess(R4A_MENU * menu,
 
                         // Exit the menu system
                         else
+                        {
+                            // https://gcc.gnu.org/wiki/Atomic/GCCMM/LIbrary
+                            r4aAtomicSub32(&r4aMenuUsers, 1);
                             menu->_menu = nullptr;
+                        }
                         if (menu->_debug)
                             Serial.printf("_menu: %p\r\n", menu->_menu);
                     }
