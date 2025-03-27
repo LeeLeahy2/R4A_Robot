@@ -233,96 +233,76 @@ void r4aNtpSetup(long timeZoneOffsetSeconds, bool displayInitialTime)
 // Update the NTP client and system time
 void r4aNtpUpdate(bool wifiConnected)
 {
+    // Determine if the network has failed
+    if ((wifiConnected == false) && (r4aNtpState > R4A_NTP_STATE_WAIT_FOR_WIFI))
+        r4aNtpSetState(R4A_NTP_STATE_FREE_WIFI_UDP);
+
+    // Update the NTP state
     switch (r4aNtpState)
     {
     default:
         break;
 
     case R4A_NTP_STATE_WAIT_FOR_WIFI:
+        // Done with the NTP client
+        if (r4aNtpClient)
+        {
+            r4aNtpClient->end();
+            delete r4aNtpClient;
+            r4aNtpClient = nullptr;
+            r4aNtpOnline = false;
+        }
+
+        // Done with the WiFi UDP object
+        if (r4aNtpUDP)
+        {
+            r4aNtpUDP->stop();
+            delete r4aNtpUDP;
+            r4aNtpUDP = nullptr;
+        }
+
         // Wait until WiFi is available
         if (wifiConnected)
             r4aNtpSetState(R4A_NTP_STATE_GET_WIFI_UDP);
         break;
 
     case R4A_NTP_STATE_GET_WIFI_UDP:
-        // Determine if the network has failed
-        if (!wifiConnected)
-            r4aNtpSetState(R4A_NTP_STATE_WAIT_FOR_WIFI);
-        else
-        {
-            // Allocate the WiFi UDP object
-            r4aNtpUDP = new WiFiUDP();
-            if (r4aNtpUDP)
-                r4aNtpSetState(R4A_NTP_STATE_GET_NTP_CLIENT);
-        }
+        // Allocate the WiFi UDP object
+        r4aNtpUDP = new NetworkUDP();
+        if (r4aNtpUDP)
+            r4aNtpSetState(R4A_NTP_STATE_GET_NTP_CLIENT);
         break;
 
     case R4A_NTP_STATE_GET_NTP_CLIENT:
         // Determine if the network has failed
-        if (!wifiConnected)
-            r4aNtpSetState(R4A_NTP_STATE_FREE_WIFI_UDP);
-        else
-        {
-            // Allocate the NTP client object
-            r4aNtpClient = new NTPClient(*r4aNtpUDP);
-            if (r4aNtpClient)
-                r4aNtpSetState(R4A_NTP_STATE_NTP_CLIENT_BEGIN);
-        }
+        // Allocate the NTP client object
+        r4aNtpClient = new NTPClient(*r4aNtpUDP);
+        if (r4aNtpClient)
+            r4aNtpSetState(R4A_NTP_STATE_NTP_CLIENT_BEGIN);
         break;
 
     case R4A_NTP_STATE_NTP_CLIENT_BEGIN:
-        // Determine if the network has failed
-        if (!wifiConnected)
-            r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
-        else
-        {
-            // Start the NTP object
-            r4aNtpClient->begin();
-            r4aNtpSetState(R4A_NTP_STATE_GET_INITIAL_TIME);
-        }
+        // Start the NTP object
+        r4aNtpClient->begin();
+        r4aNtpSetState(R4A_NTP_STATE_GET_INITIAL_TIME);
         break;
 
     case R4A_NTP_STATE_GET_INITIAL_TIME:
-        // Determine if the network has failed
-        if (!wifiConnected)
-            r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
-        else
+        // Attempt to get the time
+        r4aNtpClient->update();
+        if (r4aNtpClient->isTimeSet())
         {
-            // Attempt to get the time
-            r4aNtpClient->update();
-            if (r4aNtpClient->isTimeSet())
-            {
-                r4aNtpClient->setTimeOffset(r4aNtpTimeZoneOffsetSeconds);
-                r4aNtpOnline = true;
-                if (r4aNtpDisplayInitialTime)
-                    r4aNtpDisplayDateTime();
-                r4aNtpSetState(R4A_NTP_STATE_TIME_UPDATE);
-            }
+            r4aNtpClient->setTimeOffset(r4aNtpTimeZoneOffsetSeconds);
+            r4aNtpOnline = true;
+            if (r4aNtpDisplayInitialTime)
+                r4aNtpDisplayDateTime();
+            r4aNtpSetState(R4A_NTP_STATE_TIME_UPDATE);
         }
         break;
 
     case R4A_NTP_STATE_TIME_UPDATE:
-        // Determine if the network has failed
-        if (!wifiConnected)
-        {
-            r4aNtpOnline = false;
-            r4aNtpSetState(R4A_NTP_STATE_FREE_NTP_CLIENT);
-        }
-        else
-            // Update the time each minute
-            r4aNtpClient->update();
-        break;
-
-    case R4A_NTP_STATE_FREE_NTP_CLIENT:
-        // Done with the NTP client
-        delete r4aNtpClient;
-        r4aNtpSetState(R4A_NTP_STATE_FREE_WIFI_UDP);
-        break;
-
-    case R4A_NTP_STATE_FREE_WIFI_UDP:
-        // Done with the WiFi UDP object
-        delete r4aNtpUDP;
-        r4aNtpSetState(R4A_NTP_STATE_WAIT_FOR_WIFI);
+        // Update the time each minute
+        r4aNtpClient->update();
         break;
     }
 }
