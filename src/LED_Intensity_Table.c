@@ -1,5 +1,5 @@
 /**********************************************************************
-  LED_Intensity_Table.ino
+  LED_Intensity_Table.c
 
   Robots-For-All (R4A)
   Table to convert a color intensity into a LED intensity

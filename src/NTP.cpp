@@ -1,5 +1,5 @@
 /**********************************************************************
-  NTP.ino
+  NTP.cpp
 
   Robots-For-All (R4A)
   Get the time from the internet.
