@@ -1308,6 +1308,53 @@ class R4A_TELNET_SERVER : public Print
 };
 
 //****************************************
+// Time API
+//****************************************
+
+typedef uint32_t R4A_TIME_USEC_t;
+
+// Compute the average of a list of microsecond entries
+// Inputs:
+//   list: List of times in microseconds
+//   entries: Number of entries in the list
+//   maximumUsec: Address of a buffer to receive the maximum value
+//   minimumUsec: Address of a buffer to receive the minimum value
+// Outputs:
+//   Returns the average value in microseconds
+R4A_TIME_USEC_t r4aTimeComputeAverageUsec(R4A_TIME_USEC_t * list,
+                                          uint32_t entries,
+                                          R4A_TIME_USEC_t * maximumUsec,
+                                          R4A_TIME_USEC_t * minimumUsec);
+
+// Compute the standard deviation of a list of microsecond entries
+// Inputs:
+//   list: List of times in microseconds
+//   entries: Number of entries in the list
+//   averageUsec: Average number of microseconds
+// Outputs:
+//   Returns the standard deviation value in microseconds
+R4A_TIME_USEC_t r4aTimeComputeStdDevUsec(R4A_TIME_USEC_t * list,
+                                         uint32_t entries,
+                                         R4A_TIME_USEC_t averageUsec);
+
+// Format the time
+// Inputs:
+//   buffer: Address of a buffer to receive the time string
+//   uSec: Microsecond value to convert into a string
+void r4aTimeFormatLoopTime(char * buffer, R4A_TIME_USEC_t uSec);
+
+// Display loop times
+// Inputs:
+//   display: Device used for output
+//   list: List of times in microseconds
+//   entries: Number of entries in the list
+//   text: Zero terminated string describing the time values
+void r4aTimeDisplayLoopTimes(Print * display,
+                             R4A_TIME_USEC_t * list,
+                             uint32_t entries,
+                             const char * text);
+
+//****************************************
 // Time Zone API
 //****************************************
 
