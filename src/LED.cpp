@@ -214,7 +214,7 @@ bool r4aLEDSetup(R4A_SPI * spi,
         // bits / color bit packed in 8 bits per byte
         ledBytes = numberOfLEDs * 4 * 5;
         length = R4A_LED_RESET + ledBytes + R4A_LED_ONES;
-        r4aLEDTxDmaBuffer = r4aLEDSpi->allocateDmaBuffer(length);
+        r4aLEDTxDmaBuffer = (uint8_t *)r4aDmaMalloc(length, "LED color buffer (r4aLEDTxDmaBuffer)");
         if (!r4aLEDTxDmaBuffer)
         {
             Serial.println("ERROR: Failed to allocate r4aLEDTxDmaBuffer!");
@@ -224,7 +224,7 @@ bool r4aLEDSetup(R4A_SPI * spi,
 
         // Allocate the color array, assume four 8-bit colors per LED
         length = numberOfLEDs << 2;
-        r4aLEDColor = (uint32_t *)malloc(length);
+        r4aLEDColor = (uint32_t *)r4aMalloc(length, "LED color array (r4aLEDColor)");
         if (!r4aLEDColor)
         {
             Serial.println("ERROR: Failed to allocate r4aLEDColor!");
@@ -234,7 +234,7 @@ bool r4aLEDSetup(R4A_SPI * spi,
 
         // Allocate the 4 color bitmap
         length = (numberOfLEDs + 7) >> 3;
-        r4aLEDFourColorsBitmap = (uint8_t *)malloc(length);
+        r4aLEDFourColorsBitmap = (uint8_t *)r4aMalloc(length, "LED 4 color bitmap (r4aLEDFourColorsBitmap)");
         if (!r4aLEDFourColorsBitmap)
         {
             Serial.println("ERROR: Failed to allocate r4aLEDFourColorsBitmap!");
@@ -253,17 +253,17 @@ bool r4aLEDSetup(R4A_SPI * spi,
     // Free the allocated memory
     if (r4aLEDColor)
     {
-        free(r4aLEDColor);
+        r4aFree((void *)r4aLEDColor, "LED color array (r4aLEDColor)");
         r4aLEDColor = nullptr;
     }
     if (r4aLEDFourColorsBitmap)
     {
-        free(r4aLEDFourColorsBitmap);
+        r4aFree((void *)r4aLEDFourColorsBitmap, "LED 4 color bitmap (r4aLEDFourColorsBitmap)");
         r4aLEDFourColorsBitmap = nullptr;
     }
     if (r4aLEDTxDmaBuffer)
     {
-        free(r4aLEDTxDmaBuffer);
+        r4aDmaFree((void *)r4aLEDTxDmaBuffer, "LED color buffer (r4aLEDTxDmaBuffer)");
         r4aLEDTxDmaBuffer = nullptr;
     }
     return false;

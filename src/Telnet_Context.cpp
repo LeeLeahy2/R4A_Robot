@@ -77,7 +77,7 @@ bool r4aTelnetContextCreate(void ** contextAddr,
 
     // Return an optional object address to be used as a parameter for
     // r4aTelnetClientProcessInput
-    context = (R4A_TELNET_CONTEXT *)malloc(sizeof(*context));
+    context = (R4A_TELNET_CONTEXT *)r4aMalloc(sizeof(*context), "Telnet context (context)");
     if (context)
     {
         // Save the allocated context address
@@ -112,7 +112,7 @@ void r4aTelnetContextDelete(void ** contextAddr)
 {
     if (*contextAddr)
     {
-        free (*contextAddr);
+        r4aFree (*contextAddr, "Telnet context (context)");
         *contextAddr = nullptr;
     }
 }

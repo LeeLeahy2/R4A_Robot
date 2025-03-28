@@ -31,7 +31,7 @@ R4A_TELNET_SERVER::~R4A_TELNET_SERVER()
     // Done with the client list
     if (_clients)
     {
-        free(_clients);
+        r4aFree((void *)_clients, "Telnet client array (_clients)");
         _clients = nullptr;
     }
 }
@@ -56,7 +56,7 @@ bool R4A_TELNET_SERVER::begin(IPAddress ipAddress, uint16_t port)
         // Allocate the client list
         length = _maxClients * sizeof(R4A_TELNET_CLIENT *);
         log_v("Telnet Server: Allocating R4A_TELNET_CLIENT array, %d bytes", length);
-        _clients = (R4A_TELNET_CLIENT **)malloc(length);
+        _clients = (R4A_TELNET_CLIENT **)r4aMalloc(length, "Telnet client array (_clients)");
         if (!_clients)
         {
             Serial.printf("ERROR: Failed to allocate R4A_TELNET_CLIENT list!\r\n");
@@ -79,6 +79,13 @@ bool R4A_TELNET_SERVER::begin(IPAddress ipAddress, uint16_t port)
         _server->begin();
         _server->setNoDelay(true);
         break;
+    }
+
+    // Free the client array upon failure
+    if (_server == nullptr)
+    {
+        r4aFree((void *)_clients, "Telnet client array (_clients)");
+        _clients = nullptr;
     }
 
     // Notify the caller of the initialization status

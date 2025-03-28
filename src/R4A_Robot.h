@@ -304,6 +304,61 @@ void r4aLockAcquire(volatile int * lock, int moBefore = __ATOMIC_RELAXED, int mo
 void r4aLockRelease(volatile int * lock, int moBefore = __ATOMIC_RELAXED);
 
 //****************************************
+// Memory API
+//****************************************
+
+extern bool r4aMallocDebug;
+
+// User defined delete function, see https://en.cppreference.com/w/cpp/memory/new/operator_delete
+// Inputs:
+//   ptr: Address of the buffer to free
+//   text: Address of zero terminated string of characters
+void operator delete(void * ptr, const char * text) noexcept;
+
+// User defined new function, see https://en.cppreference.com/w/cpp/memory/new/operator_new
+// Inputs:
+//   numberOfBytes: Number of bytes to allocate for the buffer
+//   text: Address of zero terminated string of characters
+// Outputs:
+//   Returns the buffer address when successful or nullptr if failure
+void* operator new(std::size_t numberOfBytes, const char * text);
+
+// Free a DMA buffer, set the pointer to nullptr after it is freed
+// Inputs:
+//   buffer: Address of the buffer to be freed
+//   text: Text to display when debugging is enabled
+void r4aDmaFree(void * buffer, const char * text);
+
+// Allocate a buffer that support DMA
+// Inputs:
+//   numberOfBytes: Number of bytes to allocate
+//   text: Text to display when debugging is enabled
+// Outputs:
+//   Returns the buffer address or nullptr upon failure
+void * r4aDmaMalloc(size_t bytes, const char * text);
+
+// Free a buffer, set the pointer to nullptr after it is freed
+// Inputs:
+//   buffer: Address of the buffer to be freed
+//   text: Text to display when debugging is enabled
+void r4aFree(void * buffer, const char * text);
+
+// Allocate a buffer
+// Inputs:
+//   numberOfBytes: Number of bytes to allocate
+//   text: Text to display when debugging is enabled
+// Outputs:
+//   Returns the buffer address or nullptr upon failure
+void * r4aMalloc(size_t numberOfBytes, const char * text);
+
+// Determine the memory location
+// Inputs:
+//   addr: Address of the buffer
+// Outputs:
+//   Returns a zero terminated string containing the location of the buffer
+const char * r4aMemoryLocation(void * addr);
+
+//****************************************
 // Menu API
 //****************************************
 
