@@ -75,7 +75,33 @@ NTRIP_Client.cpp
 #include "R4A_Robot.h"
 
 //****************************************
-// NTRIP Caster
+// Constants
+//****************************************
+
+// Define the NTRIP client states
+enum r4aNtripClientState
+{
+    NTRIP_CLIENT_OFF = 0,           // NTRIP client disabled or missing parameters
+    NTRIP_CLIENT_WAIT_FOR_WIFI,     // Connecting to WiFi access point
+    NTRIP_CLIENT_CONNECTING,        // Attempting a connection to the NTRIP caster
+    NTRIP_CLIENT_WAIT_RESPONSE,     // Wait for a response from the NTRIP caster
+    NTRIP_CLIENT_HANDLE_RESPONSE,   // Process the response
+    NTRIP_CLIENT_CONNECTED,         // Connected to the NTRIP caster
+
+    // Insert new states above this line
+    NTRIP_CLIENT_STATE_MAX // Last entry in the state list
+};
+
+const char *const r4aNtripClientStateName[] = {"NTRIP_CLIENT_OFF",
+                                            "NTRIP_CLIENT_WAIT_FOR_WIFI",
+                                            "NTRIP_CLIENT_CONNECTING",
+                                            "NTRIP_CLIENT_WAIT_RESPONSE",
+                                            "NTRIP_CLIENT_HANDLE_RESPONSE",
+                                            "NTRIP_CLIENT_CONNECTED"};
+const int r4aNtripClientStateNameEntries = sizeof(r4aNtripClientStateName) / sizeof(r4aNtripClientStateName[0]);
+
+//****************************************
+// NTRIP Client parameters
 //****************************************
 
 const char * r4aNtripClientCasterHost = "rtk2go.com";           // NTRIP caster host name
@@ -97,43 +123,35 @@ volatile bool r4aNtripClientDebugState = false;     // Display NTRIP client stat
 volatile bool r4aNtripClientEnable = false;         // Enable the NTRIP client
 volatile bool r4aNtripClientForcedShutdown = false; // Enable the NTRIP client
 
-//*********************************************************************
-// Constructor
-R4A_NTRIP_CLIENT::R4A_NTRIP_CLIENT()
-    : _client{nullptr},
-      _state{NTRIP_CLIENT_OFF},
-      _connectionDelayMsec{r4aNtripClientBbackoffIntervalMsec[0]},
-      _connectionAttempts{0},
-      _connectionAttemptsTotal{0},
-      _forcedShutdown{false},
-      _timer{0},
-      _startTime{0},
-      _responseLength{0},
-      _rbHead{0},
-      _rbTail{0},
-      _i2cTransactionSize{0}
-{
-}
+//****************************************
+// Globals
+//****************************************
+
+R4A_NTRIP_CLIENT r4aNtripClient;
+
+//****************************************
+// Forward routine declarations
+//****************************************
+
+bool r4aNtripClientStop(bool shutdown, Print * display);
 
 //*********************************************************************
 // Attempt to connect to the NTRIP caster
-bool R4A_NTRIP_CLIENT::connect()
+bool r4aNtripClientConnect(Print * display)
 {
-    Print * display;
     int length;
 
-    if (!_client)
+    if (!r4aNtripClient._client)
         return false;
 
     // Connect to the NTRIP caster
-    display = getSerial();
-    if (r4aNtripClientDebugState)
+    if (display)
         display->printf("NTRIP Client connecting to %s:%d\r\n", r4aNtripClientCasterHost,
                         r4aNtripClientCasterPort);
-    int connectResponse = _client->connect(r4aNtripClientCasterHost, r4aNtripClientCasterPort);
+    int connectResponse = r4aNtripClient._client->connect(r4aNtripClientCasterHost, r4aNtripClientCasterPort);
     if (connectResponse < 1)
     {
-        if (r4aNtripClientDebugState)
+        if (display)
             display->printf("NTRIP Client connection to NTRIP caster %s:%d failed\r\n",
                             r4aNtripClientCasterHost, r4aNtripClientCasterPort);
         return false;
@@ -156,7 +174,7 @@ bool R4A_NTRIP_CLIENT::connect()
         char userCredentials[length];
         snprintf(userCredentials, length, "%s:%s", r4aNtripClientCasterUser, r4aNtripClientCasterUserPW);
 
-        if (r4aNtripClientDebugState)
+        if (display)
             display->printf("NTRIP Client sending credentials: %s\r\n", userCredentials);
 
         // Encode with ESP32 built-in library
@@ -204,32 +222,37 @@ bool R4A_NTRIP_CLIENT::connect()
     strcat(serverRequest, "\r\n");
     strcat(serverRequest, "\r\n");  // End of request
 
-    if (r4aNtripClientDebugState)
+    if (display)
         display->printf("NTRIP Client sending server request: %s", serverRequest);
 
     // Send the server request
-    _client->write((const uint8_t *)serverRequest, strlen(serverRequest));
+    r4aNtripClient._client->write((const uint8_t *)serverRequest, strlen(serverRequest));
     return true;
 }
 
 //*********************************************************************
 // Determine if another connection is possible or if the limit has been reached
-bool R4A_NTRIP_CLIENT::connectLimitReached()
+bool r4aNtripClientConnectLimitReached(Print * display)
 {
     // Retry the connection a few times
-    bool limitReached = (_connectionAttempts >= r4aNtripClientBbackoffCount);
+    bool limitReached = (r4aNtripClient._connectionAttempts >= r4aNtripClientBbackoffCount);
 
     // Determine if there are any more connection attempts allowed
     if (limitReached)
-        getSerial()->println("NTRIP Client connection attempts exceeded!");
+    {
+        Print * errorPrint = display ? display : &Serial;
+        errorPrint->println("NTRIP Client connection attempts exceeded!");
+    }
 
     // Restart the NTRIP client
-    stop(limitReached);
+    r4aNtripClientStop(limitReached, display);
     return limitReached;
 }
 
 //*********************************************************************
-void R4A_NTRIP_CLIENT::displayResponse(Print * display, char * response, int bytesRead)
+void r4aNtripClientDisplayResponse(char * response,
+                                   int bytesRead,
+                                   Print * display)
 {
     char byte;
     bool lineTerminationFound;
@@ -272,20 +295,20 @@ void R4A_NTRIP_CLIENT::displayResponse(Print * display, char * response, int byt
 
 //*********************************************************************
 // NTRIP Client was turned off due to an error. Don't allow restart!
-void R4A_NTRIP_CLIENT::forceShutdown()
+void r4aNtripClientForceShutdown(Print * display)
 {
     r4aNtripClientForcedShutdown = true;
-    stop(true);
+    r4aNtripClientStop(true, display);
 }
 
 //*********************************************************************
 // Print the NTRIP client state summary
-void R4A_NTRIP_CLIENT::printStateSummary(Print * display)
+void r4aNtripClientPrintStateSummary(Print * display)
 {
-    switch (_state)
+    switch (r4aNtripClient._state)
     {
     default:
-        display->printf("Unknown: %d", _state);
+        display->printf("Unknown: %d", r4aNtripClient._state);
         break;
     case NTRIP_CLIENT_OFF:
         if (!r4aNtripClientEnable)
@@ -314,7 +337,7 @@ void R4A_NTRIP_CLIENT::printStateSummary(Print * display)
 
 //*********************************************************************
 // Print the NTRIP Client status
-void R4A_NTRIP_CLIENT::printStatus(Print * display)
+void r4aNtripClientPrintStatus(Print * display)
 {
     uint32_t days;
     byte hours;
@@ -328,17 +351,17 @@ void R4A_NTRIP_CLIENT::printStatus(Print * display)
         display->println("disabled!");
     else
     {
-        printStateSummary(display);
-        display->printf(" - %s/%s:%d", r4aNtripClientCasterHost,
-                        r4aNtripClientCasterMountPoint, r4aNtripClientCasterPort);
+        r4aNtripClientPrintStateSummary(display);
+        display->printf(" - %s:%d/%s", r4aNtripClientCasterHost,
+                        r4aNtripClientCasterPort, r4aNtripClientCasterMountPoint);
 
-        if (_state == NTRIP_CLIENT_CONNECTED)
+        if (r4aNtripClient._state == NTRIP_CLIENT_CONNECTED)
             // Use _timer since it gets reset after each successful data
             // receiption from the NTRIP caster
-            milliseconds = _timer - _startTime;
+            milliseconds = r4aNtripClient._timer - r4aNtripClient._startTime;
         else
         {
-            milliseconds = _startTime;
+            milliseconds = r4aNtripClient._startTime;
             display->print(" Last");
         }
 
@@ -358,13 +381,13 @@ void R4A_NTRIP_CLIENT::printStatus(Print * display)
         display->print(" Uptime: ");
         display->printf("%ld %02d:%02d:%02d.%03lld (Reconnects: %d)\r\n",
                         days, hours, minutes, seconds, milliseconds,
-                        _connectionAttemptsTotal);
+                        r4aNtripClient._connectionAttemptsTotal);
     }
 }
 
 //*********************************************************************
 // Add data to the ring buffer
-int R4A_NTRIP_CLIENT::rbAddData(int length)
+int r4aNtripClientRbAddData(int length, Print * display)
 {
     int bytesFree;
     int bytesToCopy;
@@ -386,7 +409,7 @@ int R4A_NTRIP_CLIENT::rbAddData(int length)
     // The maximum transfer only fills the free space in the ring buffer
     // * tail --> head
     bytesWritten = 0;
-    bytesFree = _rbTail - _rbHead
+    bytesFree = r4aNtripClient._rbTail - r4aNtripClient._rbHead
               + (R4A_NTRIP_CLIENT_RING_BUFFER_BYTES << 1) - 1;
     bytesFree %= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
     if (bytesFree)
@@ -400,52 +423,58 @@ int R4A_NTRIP_CLIENT::rbAddData(int length)
         // Limit the transfer size to the contiguous space in the buffer
         // * head --> end-of-buffer
         bytesToCopy = totalBytesToCopy;
-        bytesToTail = R4A_NTRIP_CLIENT_RING_BUFFER_BYTES - _rbHead;
+        bytesToTail = R4A_NTRIP_CLIENT_RING_BUFFER_BYTES - r4aNtripClient._rbHead;
         if (bytesToCopy > bytesToTail)
             bytesToCopy = bytesToTail;
 
         // Fill the contiguous portion of the buffer
         totalBytesToCopy -= bytesToCopy;
-        bytesRead = _client->read((uint8_t *)&_ringBuffer[_rbHead],
-                                   bytesToCopy);
+        bytesRead = r4aNtripClient._client->read((uint8_t *)&r4aNtripClient._ringBuffer[r4aNtripClient._rbHead],
+                                                 bytesToCopy);
 
         // Fill the remaining portion of the buffer
         if (totalBytesToCopy)
-            bytesRead += _client->read((uint8_t *)_ringBuffer,
-                                       totalBytesToCopy);
+            bytesRead += r4aNtripClient._client->read((uint8_t *)r4aNtripClient._ringBuffer,
+                                                      totalBytesToCopy);
 
         // Display the bytes read
-        if (r4aNtripClientDebugRtcm)
-            Serial.printf("NTRIP RX --> buffer, %d RTCM bytes.\r\n", bytesRead);
+        Print * debugDisplay = r4aNtripClientDebugRtcm ? display : nullptr;
+        if (debugDisplay)
+            debugDisplay->printf("NTRIP RX --> buffer, %d RTCM bytes.\r\n", bytesRead);
 
         // Account for the data copied
         bytesWritten += bytesRead;
-        _rbHead = _rbHead + bytesRead;
-        if (_rbHead >= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES)
-            _rbHead = _rbHead - R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
+        r4aNtripClient._rbHead = r4aNtripClient._rbHead + bytesRead;
+        if (r4aNtripClient._rbHead >= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES)
+            r4aNtripClient._rbHead = r4aNtripClient._rbHead - R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
     }
 
     // Determine if any data was read from the NTRIP caster
     if (bytesWritten)
         // Restart the NTRIP receive data timer
-        _timer = millis();
+        r4aNtripClient._timer = millis();
     return bytesWritten;
 }
 
 //*********************************************************************
 // Remove data from the ring buffer
-int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
+int r4aNtripClientRbRemoveData(Print * display)
 {
     int bytesAvailable;
-
     int bytesToTail;
     int bytesMinimum;
     int bytesToPush;
     int bytesWritten;
+    Print * debugRtcm;
+    Print * errorPrint;
     uint8_t transactionSize;
 
+    // Determine the output locations
+    debugRtcm = r4aNtripClientDebugRtcm ? display : nullptr;
+    errorPrint = display ? display : &Serial;
+
     // NTRIP client must be actively receiving data
-    if (_state != NTRIP_CLIENT_CONNECTED)
+    if (r4aNtripClient._state != NTRIP_CLIENT_CONNECTED)
         return 0;
 
     //           Tail --.                    .-- Head
@@ -459,16 +488,16 @@ int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
     //            Head                              Tail
     //
     // Determine the number of bytes in the ring buffer
-    bytesAvailable = _rbHead + R4A_NTRIP_CLIENT_RING_BUFFER_BYTES
-                   - _rbTail;
+    bytesAvailable = r4aNtripClient._rbHead + R4A_NTRIP_CLIENT_RING_BUFFER_BYTES
+                   - r4aNtripClient._rbTail;
     bytesAvailable %= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
 
     // Get the I2C transaction size
-    transactionSize = _i2cTransactionSize;
+    transactionSize = r4aNtripClient._i2cTransactionSize;
 
     // Wait for more data if necessary
     bytesWritten = 0;
-    bytesMinimum = _minimumRxBytes << 1;
+    bytesMinimum = R4A_NTRIP_CLIENT_MINIMUM_RX_BYTES << 1;
     if (bytesAvailable >= bytesMinimum)
     {
         while (bytesAvailable >= bytesMinimum)
@@ -477,7 +506,7 @@ int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
             bytesToPush = bytesAvailable;
 
             // Limit this value to the contiguous data in the buffer
-            bytesToTail = R4A_NTRIP_CLIENT_RING_BUFFER_BYTES - _rbTail;
+            bytesToTail = R4A_NTRIP_CLIENT_RING_BUFFER_BYTES - r4aNtripClient._rbTail;
             if (bytesToPush > bytesToTail)
                 bytesToPush = bytesToTail;
 
@@ -499,30 +528,30 @@ int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
             // Always reserve a small portion at the end of the buffer when
             // the data does not quite reach the end of the buffer
             bytesToTail -= bytesToPush;
-            if (bytesToTail && (bytesToTail < _minimumRxBytes))
-                bytesToPush -= _minimumRxBytes - bytesToTail;
+            if (bytesToTail && (bytesToTail < R4A_NTRIP_CLIENT_MINIMUM_RX_BYTES))
+                bytesToPush -= R4A_NTRIP_CLIENT_MINIMUM_RX_BYTES - bytesToTail;
 
             // Push data to the GNSS using I2C
-            int bytesPushed = pushRawData((uint8_t *)&_ringBuffer[_rbTail],
-                                          bytesToPush,
-                                          display);
+            int bytesPushed = r4aNtripClientPushRawData((uint8_t *)&r4aNtripClient._ringBuffer[r4aNtripClient._rbTail],
+                                                        bytesToPush,
+                                                        nullptr);
             if (bytesPushed == 0)
             {
-                Serial.printf("NTRIP buffer --> GNSS failed! bytesWritten: %d\r\n", bytesWritten);
+                errorPrint->printf("NTRIP buffer --> GNSS failed! bytesWritten: %d\r\n", bytesWritten);
                 break;
             }
 
             // Account for the data copied
             bytesAvailable -= bytesPushed;
             bytesWritten += bytesPushed;
-            _rbTail = _rbTail + bytesPushed;
-            if (_rbTail >= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES)
-                _rbTail = _rbTail - R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
+            r4aNtripClient._rbTail = r4aNtripClient._rbTail + bytesPushed;
+            if (r4aNtripClient._rbTail >= R4A_NTRIP_CLIENT_RING_BUFFER_BYTES)
+                r4aNtripClient._rbTail = r4aNtripClient._rbTail - R4A_NTRIP_CLIENT_RING_BUFFER_BYTES;
         }
 
         // Display the RTCM written to the GNSS
-        if (r4aNtripClientDebugRtcm)
-            Serial.printf("NTRIP buffer --> GNSS, %d RTCM bytes.\r\n", bytesWritten);
+        if (debugRtcm)
+            debugRtcm->printf("NTRIP buffer --> GNSS, %d RTCM bytes.\r\n", bytesWritten);
     }
 
     // Return the number of byte written
@@ -531,7 +560,7 @@ int R4A_NTRIP_CLIENT::rbRemoveData(Print * display)
 
 //*********************************************************************
 // Read the response from the NTRIP client
-void R4A_NTRIP_CLIENT::response(Print *display, int length)
+void r4aNtripClientResponse(Print *display, int length)
 {
     int bytesRead;
     char data[R4A_NTRIP_CLIENT_RESPONSE_BUFFER_SIZE];
@@ -541,24 +570,24 @@ void R4A_NTRIP_CLIENT::response(Print *display, int length)
     while (length > 0)
     {
         // Get the buffer address
-        response = _responseLength ? data : _responseBuffer;
+        response = r4aNtripClient._responseLength ? data : r4aNtripClient._responseBuffer;
 
         // Don't overfill the buffer
         if (length > (R4A_NTRIP_CLIENT_RESPONSE_BUFFER_SIZE - 1))
             length = R4A_NTRIP_CLIENT_RESPONSE_BUFFER_SIZE - 1;
 
         // Get the NTRIP caster data
-        bytesRead = _client->read((uint8_t *)response, length);
+        bytesRead = r4aNtripClient._client->read((uint8_t *)response, length);
 
         // Zero terminate the response
         response[bytesRead] = 0;
 
         // Save the length of the first packet of the response
-        if (!_responseLength)
-            _responseLength = bytesRead;
+        if (!r4aNtripClient._responseLength)
+            r4aNtripClient._responseLength = bytesRead;
 
         // Extend the end-of-response timeout
-        _timer = millis();
+        r4aNtripClient._timer = millis();
 
         // Display the response if necessary
         if (r4aNtripClientDebugState)
@@ -571,116 +600,118 @@ void R4A_NTRIP_CLIENT::response(Print *display, int length)
 
 //*********************************************************************
 // Restart the NTRIP client
-void R4A_NTRIP_CLIENT::restart()
+void r4aNtripClientRestart(Print * display)
 {
     // Save the previous uptime value
-    if (_state == NTRIP_CLIENT_CONNECTED)
-        _startTime = _timer - _startTime;
-    connectLimitReached();
+    if (r4aNtripClient._state == NTRIP_CLIENT_CONNECTED)
+        r4aNtripClient._startTime = r4aNtripClient._timer - r4aNtripClient._startTime;
+    r4aNtripClientConnectLimitReached(display);
 }
 
 //*********************************************************************
 // Update the state of the NTRIP client state machine
-void R4A_NTRIP_CLIENT::setState(uint8_t newState)
+void r4aNtripClientSetState(uint8_t newState, Print * display)
 {
-    Print * display;
+    Print * debugState = r4aNtripClientDebugState ? display : nullptr;
 
-    if (!r4aNtripClientDebugState)
-        _state = newState;
+    if (!debugState)
+        r4aNtripClient._state = newState;
     else
     {
-        display = getSerial();
-        if (_state == newState)
-            display->print("NTRIP Client: *");
+        if (r4aNtripClient._state == newState)
+            debugState->print("NTRIP Client: *");
         else
-            display->printf("NTRIP Client: %s --> ", r4aNtripClientStateName[_state]);
-        _state = newState;
+            debugState->printf("NTRIP Client: %s --> ", r4aNtripClientStateName[r4aNtripClient._state]);
+        r4aNtripClient._state = newState;
         if (newState >= NTRIP_CLIENT_STATE_MAX)
         {
-            display->printf("Unknown client state: %d\r\n", newState);
+            debugState->printf("Unknown client state: %d\r\n", newState);
             r4aReportFatalError("Unknown NTRIP Client state");
         }
         else
-            display->println(r4aNtripClientStateName[_state]);
+            debugState->println(r4aNtripClientStateName[r4aNtripClient._state]);
     }
 }
 
 //*********************************************************************
 // Start the NTRIP client
-void R4A_NTRIP_CLIENT::start()
+void r4aNtripClientStart(Print * display)
 {
     // Get the transaction size
-    _i2cTransactionSize = i2cTransactionSize();
+    r4aNtripClient._i2cTransactionSize = r4aNtripClientI2cTransactionSize();
 
     // Start the NTRIP client
-    stop(false);
+    r4aNtripClientStop(false, display);
 }
 
 //*********************************************************************
 // Shutdown or restart the NTRIP client
-bool R4A_NTRIP_CLIENT::stop(bool shutdown)
+bool r4aNtripClientStop(bool shutdown, Print * display)
 {
-    Print * display;
+    Print * debugState;
+    Print * errorPrint;
     bool stopped;
 
+    // Determine the output locations
+    debugState = r4aNtripClientDebugState ? display : nullptr;
+    errorPrint = display ? display : &Serial;
+
     // Release the previous client connection
-    if (_client)
+    if (r4aNtripClient._client)
     {
         // Break the NTRIP client connection if necessary
-        if (_client->connected())
-            _client->stop();
+        if (r4aNtripClient._client->connected())
+            r4aNtripClient._client->stop();
 
         // Free the NTRIP client resources
-        delete _client;
-        _client = nullptr;
+        delete r4aNtripClient._client;
+        r4aNtripClient._client = nullptr;
     }
 
     // Determine the next NTRIP client state
-    display = getSerial();
     stopped = shutdown || (!r4aNtripClientEnable);
     if (stopped)
     {
         // Set the next NTRIP client state
-        if (_state != NTRIP_CLIENT_OFF)
+        if (r4aNtripClient._state != NTRIP_CLIENT_OFF)
         {
-            setState(NTRIP_CLIENT_OFF);
-            _connectionAttempts = 0;
-            display->println("NTRIP Client stopped");
+            r4aNtripClientSetState(NTRIP_CLIENT_OFF, display);
+            r4aNtripClient._connectionAttempts = 0;
+            errorPrint->println("NTRIP Client stopped");
         }
     }
     else
     {
         // Get the backoff time in milliseconds
-        int index = _connectionAttempts;
+        int index = r4aNtripClient._connectionAttempts;
         if (index >= r4aNtripClientBbackoffCount)
             index = r4aNtripClientBbackoffCount - 1;
-        _connectionDelayMsec = r4aNtripClientBbackoffIntervalMsec[index];
+        r4aNtripClient._connectionDelayMsec = r4aNtripClientBbackoffIntervalMsec[index];
 
         // Start the backoff timer now, overlay delay with WiFi connection
-        _timer = millis();
+        r4aNtripClient._timer = millis();
 
         // Display the delay before starting the NTRIP client
-        if (r4aNtripClientDebugState)
+        if (debugState)
         {
-            Print * display = getSerial();
-            if (_connectionAttempts)
-                display->print("NTRIP Client starting");
+            if (r4aNtripClient._connectionAttempts)
+                debugState->print("NTRIP Client starting");
             else
-                display->print("NTRIP Client trying again");
-            if (!_connectionDelayMsec)
-                display->println();
+                debugState->print("NTRIP Client trying again");
+            if (!r4aNtripClient._connectionDelayMsec)
+                debugState->println();
             else
             {
-                int seconds = _connectionDelayMsec / 1000;
+                int seconds = r4aNtripClient._connectionDelayMsec / 1000;
                 if (seconds <= 60)
-                    display->printf(" in %d seconds.\r\n", seconds);
+                    debugState->printf(" in %d seconds.\r\n", seconds);
                 else
-                    display->printf(" in %d minutes.\r\n", seconds / 60);
+                    debugState->printf(" in %d minutes.\r\n", seconds / 60);
             }
         }
 
         // Set the next NTRIP client state
-        setState(NTRIP_CLIENT_WAIT_FOR_WIFI);
+        r4aNtripClientSetState(NTRIP_CLIENT_WAIT_FOR_WIFI, display);
     }
 
     // Return the stopped state
@@ -691,16 +722,46 @@ bool R4A_NTRIP_CLIENT::stop(bool shutdown)
 // Check for the arrival of any correction data. Push it to the GNSS.
 // Stop task if the connection has dropped or if we receive no data for
 // _receiveTimeout
-void R4A_NTRIP_CLIENT::update(bool wifiConnected)
+void r4aNtripClientUpdate(bool wifiConnected, Print * display)
 {
-    Print * display = getSerial();
+    Print * debugState;
+    Print * errorPrint;
+    int length;
+    const char * response;
+
+    // Determine the output locations
+    debugState = r4aNtripClientDebugState ? display : nullptr;
+    errorPrint = display ? display : &Serial;
 
     // Shutdown the NTRIP client when the mode or setting changes
-    if ((!r4aNtripClientEnable) && (_state > NTRIP_CLIENT_OFF))
-        stop(true);
+    if ((!r4aNtripClientEnable) && (r4aNtripClient._state > NTRIP_CLIENT_OFF))
+    {
+        if (debugState)
+            debugState->println("NTRIP Client: WiFi link to remote AP failed!");
+        r4aNtripClientStop(true, display);
+    }
+
+    // Determine if the WiFi link is working
+    if ((!wifiConnected) && (r4aNtripClient._state > NTRIP_CLIENT_WAIT_FOR_WIFI))
+    {
+        // Wifi link failed, retry the NTRIP client connection
+        if (debugState)
+            debugState->println("NTRIP Client: WiFi link to remote AP failed!");
+        r4aNtripClientRestart(display);
+    }
+
+    // Check for a broken connection
+    else if ((r4aNtripClient._state > NTRIP_CLIENT_WAIT_RESPONSE)
+        && (!r4aNtripClient._client->connected()))
+    {
+        // Broken connection, retry the NTRIP client connection
+        if (debugState)
+            debugState->println("NTRIP Client connection to caster was broken!");
+        r4aNtripClientRestart(display);
+    }
 
     // Enable the network and the NTRIP client if requested
-    switch (_state)
+    switch (r4aNtripClient._state)
     {
     // NTRIP client disabled or missing a parameter
     case NTRIP_CLIENT_OFF:
@@ -709,17 +770,17 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
         {
             // Don't allow the client to restart if a forced shutdown occured
             if (r4aNtripClientForcedShutdown)
-                display->println("ERROR: Please clear the forced error before starting the NTRIP client!");
+                errorPrint->println("ERROR: Please clear the forced error before starting the NTRIP client!");
             else if (!r4aNtripClientCasterHost)
-                display->println("ERROR: Please set the NTRIP caster host name!");
+                errorPrint->println("ERROR: Please set the NTRIP caster host name!");
             else if (!r4aNtripClientCasterMountPoint)
-                display->println("ERROR: Please set the NTRIP caster mount point!");
+                errorPrint->println("ERROR: Please set the NTRIP caster mount point!");
             else if (!r4aNtripClientCasterUser)
-                display->println("ERROR: Please set the NTRIP caster user name!");
+                errorPrint->println("ERROR: Please set the NTRIP caster user name!");
             else
             {
                 // NTRIP client is enabled with all the necessary paramters
-                start();
+                r4aNtripClientStart(display);
                 break;
             }
             r4aNtripClientEnable = false;
@@ -733,223 +794,201 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
         if (wifiConnected)
         {
             // Allocate the _client structure
-            _client = new NetworkClient();
-            if (!_client)
+            r4aNtripClient._client = new NetworkClient();
+            if (!r4aNtripClient._client)
             {
                 // Failed to allocate the _client structure
-                display->println("ERROR: Failed to allocate the _client structure!");
-                forceShutdown();
+                errorPrint->println("ERROR: Failed to allocate the _client structure!");
+                r4aNtripClientForceShutdown(display);
             }
             else
             {
                 // Account for this connection attempt
-                _connectionAttempts += 1;
-                _connectionAttemptsTotal += 1;
+                r4aNtripClient._connectionAttempts += 1;
+                r4aNtripClient._connectionAttemptsTotal += 1;
 
                 // The network is available for the NTRIP client
-                setState(NTRIP_CLIENT_CONNECTING);
+                r4aNtripClientSetState(NTRIP_CLIENT_CONNECTING, display);
             }
         }
         break;
 
     case NTRIP_CLIENT_CONNECTING:
-        // Determine if the WiFi link is working
-        if (!wifiConnected)
-            // Wifi link failed, retry the NTRIP client connection
-            restart();
-
         // Delay before opening the NTRIP client connection
-        else if ((millis() - _timer) >= _connectionDelayMsec)
+        if ((millis() - r4aNtripClient._timer) >= r4aNtripClient._connectionDelayMsec)
         {
             // Open connection to NTRIP caster service
-            if (!connect())
+            if (!r4aNtripClientConnect(debugState))
             {
                 // Assume service not available
-                if (connectLimitReached()) // Updates _connectionDelayMsec
-                    display->println(
+                if (r4aNtripClientConnectLimitReached(display))
+                    errorPrint->println(
                         "NTRIP caster failed to connect. Do you have your caster address and port correct?");
             }
             else
             {
                 // Socket opened to NTRIP system
-                if (r4aNtripClientDebugState)
-                    display->printf("NTRIP Client waiting for response from %s:%d\r\n",
-                                    r4aNtripClientCasterHost, r4aNtripClientCasterPort);
+                if (debugState)
+                    debugState->printf("NTRIP Client waiting for response from %s:%d\r\n",
+                                       r4aNtripClientCasterHost, r4aNtripClientCasterPort);
 
                 // Start the response timer
-                _timer = millis();
-                _responseLength = 0;
-                setState(NTRIP_CLIENT_WAIT_RESPONSE);
+                r4aNtripClient._timer = millis();
+                r4aNtripClient._responseLength = 0;
+                r4aNtripClientSetState(NTRIP_CLIENT_WAIT_RESPONSE, display);
             }
         }
         break;
 
     case NTRIP_CLIENT_WAIT_RESPONSE:
-        // Determine if the WiFi link is working
-        if (!wifiConnected)
-            // Wifi link failed, retry the NTRIP client connection
-            restart();
-
         // At least a few bytes received, wait ultil the response is done
-        else
+        // Save the initial portion of the response
+        length = r4aNtripClient._client->available();
+        if (length)
         {
-            // Save the initial portion of the response
-            int length = _client->available();
-            if (length)
-            {
-                // Check for the end of the response
-                if (_client->peek() == 0xd3)
-                    // End of response
-                    setState(NTRIP_CLIENT_HANDLE_RESPONSE);
-
-                // Get the next portion of the response
-                else
-                    response(display, length);
-            }
-
-            // Check for the end of the response timeout
-            else if ((millis() - _timer) >= r4aNtripClientResponseDone)
+            // Check for the end of the response
+            if (r4aNtripClient._client->peek() == 0xd3)
                 // End of response
-                setState(NTRIP_CLIENT_HANDLE_RESPONSE);
+                r4aNtripClientSetState(NTRIP_CLIENT_HANDLE_RESPONSE, display);
 
-            // Check for a response timeout
-            else if ((!_responseLength)
-                && ((millis() - _timer) > r4aNtripClientResponseTimeout))
-            {
-                // NTRIP web service did not respond
-               if (connectLimitReached()) // Updates _connectionDelayMsec
-                    display->println("NTRIP Caster failed to respond. Do you have your caster address and port correct?");
-            }
+            // Get the next portion of the response
+            else
+                r4aNtripClientResponse(display, length);
+        }
+
+        // Check for the end of the response timeout
+        else if ((millis() - r4aNtripClient._timer) >= r4aNtripClientResponseDone)
+            // End of response
+            r4aNtripClientSetState(NTRIP_CLIENT_HANDLE_RESPONSE, display);
+
+        // Check for a response timeout
+        else if ((!r4aNtripClient._responseLength)
+            && ((millis() - r4aNtripClient._timer) > r4aNtripClientResponseTimeout))
+        {
+            // NTRIP web service did not respond
+           if (r4aNtripClientConnectLimitReached(display))
+                errorPrint->println("NTRIP Caster failed to respond. Do you have your caster address and port correct?");
         }
         break;
 
     case NTRIP_CLIENT_HANDLE_RESPONSE:
-        // Determine if the WiFi link is working
-        if (!wifiConnected)
-            // Wifi link failed, retry the NTRIP client connection
-            restart();
-
         // Process the respones
-        else
+        response = r4aNtripClient._responseBuffer;
+
+        // Separate the output
+        if (debugState)
+            debugState->println();
+
+        // Look for various responses
+        if (strstr(response, "200") != nullptr) //'200' found
         {
-            const char * response = _responseBuffer;
-
-            // Separate the output
-            if (r4aNtripClientDebugState)
-                display->println();
-
-            // Look for various responses
-            if (strstr(response, "200") != nullptr) //'200' found
+            // Check for banned from the NTRIP caster
+            if (strcasestr(response, "banned") != nullptr)
             {
-                // Check for banned from the NTRIP caster
-                if (strcasestr(response, "banned") != nullptr)
-                {
-                    display->printf("NTRIP Client banned from %s!\r\n",
-                                    r4aNtripClientCasterHost);
+                errorPrint->printf("NTRIP Client banned from %s!\r\n",
+                                   r4aNtripClientCasterHost);
 
-                    // No longer allowed to access this website
-                    // Try again later
-                    forceShutdown();
-                }
-
-                // Check for using sandbox
-                else if (strcasestr(response, "sandbox") != nullptr)
-                {
-                    display->printf("NTRIP Client redirected to sandbox on %s!\r\n",
-                                    r4aNtripClientCasterHost);
-
-                    connectLimitReached(); // Re-attempted after a period of time. Shuts down NTRIP Client if
-                                                      // limit reached.
-                }
-
-                // Check for failed lookup
-                else if (strcasestr(response, "SOURCETABLE") != nullptr)
-                {
-                    display->printf("Mount point %s not found on %s!\r\n",
-                                    r4aNtripClientCasterMountPoint, r4aNtripClientCasterHost);
-
-                    // Stop NTRIP client operations
-                    forceShutdown();
-                }
-                else
-                {
-                    // Timeout receiving NTRIP data, retry the NTRIP client connection
-                    if (r4aNtpOnline)
-                        display->printf("NTRIP Client connected to %s:%d at %s\r\n",
-                                        r4aNtripClientCasterHost, r4aNtripClientCasterPort,
-                                        r4aNtpGetTime24(r4aNtpGetEpochTime()).c_str());
-                    else
-                        display->printf("NTRIP Client connected to %s:%d\r\n",
-                                        r4aNtripClientCasterHost, r4aNtripClientCasterPort);
-
-                    // Connection is now open, start the NTRIP receive data timer
-                    _startTime = millis();
-                    _timer = _startTime;
-
-                    // Start processing correction data
-                    setState(NTRIP_CLIENT_CONNECTED);
-                }
+                // No longer allowed to access this website
+                // Try again later
+                r4aNtripClientForceShutdown(display);
             }
 
-            // Check for unauthorized user
-            else if (strstr(response, "401") != nullptr)
+            // Check for using sandbox
+            else if (strcasestr(response, "sandbox") != nullptr)
             {
-                // Look for '401 Unauthorized'
-                display->printf("User %s not authorized on NTRIP Caster %s!\r\n"
-                                "Are you sure your caster credentials are correct?\r\n",
-                                r4aNtripClientCasterUser, r4aNtripClientCasterHost);
+                errorPrint->printf("NTRIP Client redirected to sandbox on %s!\r\n",
+                                   r4aNtripClientCasterHost);
+
+                // Re-attempted after a period of time. Shuts down
+                // NTRIP Client if limit reached.
+                r4aNtripClientConnectLimitReached(display);
+            }
+
+            // Check for failed lookup
+            else if (strcasestr(response, "SOURCETABLE") != nullptr)
+            {
+                errorPrint->printf("Mount point %s not found on %s!\r\n",
+                                   r4aNtripClientCasterMountPoint, r4aNtripClientCasterHost);
 
                 // Stop NTRIP client operations
-               forceShutdown();
+                r4aNtripClientForceShutdown(display);
             }
-
-            // Check for startup phase
-            else if (strstr(response, "406") != nullptr)
-            {
-                // Look for '406 In Start Up Phase'
-                display->printf("NTRIP caster %s is in its startup phase!\r\n",
-                                r4aNtripClientCasterHost);
-
-                // Stop NTRIP client operations
-                restart();
-            }
-
-            // Other errors returned by the caster
             else
             {
-                if (!r4aNtripClientEnable)
-                    display->print(_responseBuffer);
-                if (_responseLength)
-                {
-                    display->printf("NTRIP caster %s responded with an error!\r\n",
-                                    r4aNtripClientCasterHost);
-
-                    // Stop NTRIP client operations
-                    forceShutdown();
-                }
+                // Timeout receiving NTRIP data, retry the NTRIP client connection
+                if (r4aNtpOnline)
+                    errorPrint->printf("NTRIP Client connected to %s:%d/%s at %s\r\n",
+                                       r4aNtripClientCasterHost, r4aNtripClientCasterPort,
+                                       r4aNtripClientCasterMountPoint,
+                                       r4aNtpGetTime24(r4aNtpGetEpochTime()).c_str());
                 else
-                {
-                    display->printf("Response timeout from NTRIP caster %s!\r\n",
-                                    r4aNtripClientCasterHost);
-                    connectLimitReached(); // Re-attempted after a period of time. Shuts down NTRIP Client if
-                                           // limit reached.
-                }
+                    errorPrint->printf("NTRIP Client connected to %s:%d\r\n",
+                                       r4aNtripClientCasterHost, r4aNtripClientCasterPort);
+
+                // Connection is now open, start the NTRIP receive data timer
+                r4aNtripClient._startTime = millis();
+                r4aNtripClient._timer = r4aNtripClient._startTime;
+
+                // Start processing correction data
+                r4aNtripClientSetState(NTRIP_CLIENT_CONNECTED, display);
+            }
+        }
+
+        // Check for unauthorized user
+        else if (strstr(response, "401") != nullptr)
+        {
+            // Look for '401 Unauthorized'
+            errorPrint->printf("User %s not authorized on NTRIP Caster %s!\r\n"
+                               "Are you sure your caster credentials are correct?\r\n",
+                               r4aNtripClientCasterUser, r4aNtripClientCasterHost);
+
+            // Stop NTRIP client operations
+           r4aNtripClientForceShutdown(display);
+        }
+
+        // Check for startup phase
+        else if (strstr(response, "406") != nullptr)
+        {
+            // Look for '406 In Start Up Phase'
+            errorPrint->printf("NTRIP caster %s is in its startup phase!\r\n",
+                               r4aNtripClientCasterHost);
+
+            // Stop NTRIP client operations
+            r4aNtripClientRestart(display);
+        }
+
+        // Other errors returned by the caster
+        else
+        {
+            if (!r4aNtripClientEnable)
+                errorPrint->print(r4aNtripClient._responseBuffer);
+            if (r4aNtripClient._responseLength)
+            {
+                errorPrint->printf("NTRIP caster %s responded with an error!\r\n",
+                                   r4aNtripClientCasterHost);
+
+                // Stop NTRIP client operations
+                r4aNtripClientForceShutdown(display);
+            }
+            else
+            {
+                errorPrint->printf("Response timeout from NTRIP caster %s!\r\n",
+                                   r4aNtripClientCasterHost);
+
+                // Re-attempted after a period of time. Shuts down
+                // NTRIP Client if limit reached.
+                r4aNtripClientConnectLimitReached(display);
             }
         }
         break;
 
     case NTRIP_CLIENT_CONNECTED:
-        // Determine if the WiFi link is working
-        if (!wifiConnected)
-            // Wifi link failed, retry the NTRIP client connection
-            restart();
-
         // Check for a broken connection
-        else if (!_client->connected())
+        if (!r4aNtripClient._client->connected())
         {
             // Broken connection, retry the NTRIP client connection
-            display->println("NTRIP Client connection to caster was broken");
-            restart();
+            errorPrint->println("NTRIP Client connection to caster was broken");
+            r4aNtripClientRestart(display);
         }
         else
         {
@@ -959,28 +998,28 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
             // connection.  However increasing backoff delays should be
             // added when the NTRIP caster fails after a short connection
             // interval.
-            if (_connectionAttempts
-                && ((millis() - _startTime) > R4A_NTRIP_CLIENT_CONNECTION_TIME))
+            if (r4aNtripClient._connectionAttempts
+                && ((millis() - r4aNtripClient._startTime) > R4A_NTRIP_CLIENT_CONNECTION_TIME))
             {
                 // After a long connection period, reset the attempt counter
-                _connectionAttempts = 0;
-                if (r4aNtripClientDebugState)
-                    display->println("NTRIP Client resetting connection attempt counter and timeout");
+                r4aNtripClient._connectionAttempts = 0;
+                if (debugState)
+                    debugState->println("NTRIP Client resetting connection attempt counter and timeout");
             }
 
             // Check for timeout receiving NTRIP data
-            if (_client->available() == 0)
+            if (r4aNtripClient._client->available() == 0)
             {
                 // Don't fail during retransmission attempts
-                if ((millis() - _timer) > r4aNtripClientReceiveTimeout)
+                if ((millis() - r4aNtripClient._timer) > r4aNtripClientReceiveTimeout)
                 {
                     // Timeout receiving NTRIP data, retry the NTRIP client connection
                     if (r4aNtpOnline)
-                        display->printf("NTRIP Client timeout receiving data at %s\r\n",
-                                        r4aNtpGetTime24(r4aNtpGetEpochTime()).c_str());
+                        errorPrint->printf("NTRIP Client timeout receiving data at %s\r\n",
+                                           r4aNtpGetTime24(r4aNtpGetEpochTime()).c_str());
                     else
-                        display->println("NTRIP Client timeout receiving data");
-                    restart();
+                        errorPrint->println("NTRIP Client timeout receiving data");
+                    r4aNtripClientRestart(display);
                 }
             }
             else
@@ -988,11 +1027,11 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
                 int availableBytes;
 
                 // Receive data from the NTRIP Caster
-                availableBytes = _client->available();
+                availableBytes = r4aNtripClient._client->available();
                 while (availableBytes)
                 {
-                    rbAddData(availableBytes);
-                    availableBytes = _client->available();
+                    r4aNtripClientRbAddData(availableBytes, display);
+                    availableBytes = r4aNtripClient._client->available();
                 }
             }
         }
@@ -1002,7 +1041,7 @@ void R4A_NTRIP_CLIENT::update(bool wifiConnected)
 
 //*********************************************************************
 // Verify the NTRIP client tables
-void R4A_NTRIP_CLIENT::validateTables()
+void r4aNtripClientValidateTables()
 {
     if (r4aNtripClientStateNameEntries != NTRIP_CLIENT_STATE_MAX)
         r4aReportFatalError("Fix r4aNtripClientStateNameEntries to match _state");
