@@ -181,11 +181,9 @@ bool r4aRobotIsActive(R4A_ROBOT * robot)
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
 //   challenge: Address of challenge object
-//   duration: Number of seconds to run the challenge
 //   display: Device used for output
 bool r4aRobotStart(R4A_ROBOT * robot,
                    R4A_ROBOT_CHALLENGE * challenge,
-                   uint32_t duration,
                    Print * display)
 {
     uint32_t currentMsec;
@@ -220,14 +218,14 @@ bool r4aRobotStart(R4A_ROBOT * robot,
     robot->_initMsec = currentMsec;
     robot->_nextDisplayMsec = currentMsec;
     robot->_startMsec = robot->_initMsec + robot->_startDelayMsec;
-    robot->_endMsec = robot->_startMsec + (duration * R4A_MILLISECONDS_IN_A_SECOND);
+    robot->_endMsec = robot->_startMsec + (challenge->_duration * R4A_MILLISECONDS_IN_A_SECOND);
 
     // Display the start delay time
     display->printf("Robot: Delaying %ld seconds before starting %s\r\n",
                     robot->_startDelayMsec / 1000, challenge->_name);
 
     // Split the duration
-    seconds = duration;
+    seconds = challenge->_duration;
     minutes = seconds / 60;
     seconds -= minutes * 60;
     hours = minutes / 60;

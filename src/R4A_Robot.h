@@ -925,11 +925,9 @@ bool r4aRobotIsActive(R4A_ROBOT * robot);
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
 //   challenge: Address of challenge object
-//   duration: Number of seconds to run the challenge
 //   display: Device used for output
 bool r4aRobotStart(R4A_ROBOT * robot,
                    R4A_ROBOT_CHALLENGE * challenge,
-                   uint32_t duration,
                    Print * display = &Serial);
 
 // Stop the robot
