@@ -914,6 +914,13 @@ void r4aRobotInit(R4A_ROBOT * robot,
                   R4A_ROBOT_TIME_CALLBACK idle = nullptr,
                   R4A_ROBOT_TIME_CALLBACK displayTime = nullptr);
 
+// Determine if the robot layer is active
+// Inputs:
+//   robot: Address of an R4A_ROBOT data structure
+// Outputs:
+//   Returns true when the challenge is running and false otherwise
+bool r4aRobotIsActive(R4A_ROBOT * robot);
+
 // Determine if it is possible to start the robot
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
@@ -924,13 +931,6 @@ bool r4aRobotStart(R4A_ROBOT * robot,
                    R4A_ROBOT_CHALLENGE * challenge,
                    uint32_t duration,
                    Print * display = &Serial);
-
-// Determine if the robot layer is active
-// Inputs:
-//   robot: Address of an R4A_ROBOT data structure
-// Outputs:
-//   Returns true when the challenge is running and false otherwise
-bool r4aRobotIsActive(R4A_ROBOT * robot);
 
 // Stop the robot
 // Inputs:
