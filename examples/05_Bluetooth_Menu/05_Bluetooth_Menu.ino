@@ -5,7 +5,7 @@
   Example simplifying the serial input
 **********************************************************************/
 
-#include <R4A_Robot.h>
+#include <R4A_ESP32.h>
 
 #define BLUETOOTH_NAME      "Robot"
 

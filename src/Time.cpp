@@ -23,7 +23,7 @@ R4A_TIME_USEC_t r4aTimeComputeAverageUsec(R4A_TIME_USEC_t * list,
     // Compute the average loop times
     averageUsec = 0;
     maxUsec = 0;
-    minUsec = (uint64_t)-1LL;
+    minUsec = (R4A_TIME_USEC_t)-1LL;
     for (index = 0; index < entries; index++)
     {
         valueUsec = list[index];
@@ -77,9 +77,9 @@ void r4aTimeFormatLoopTime(char * buffer, R4A_TIME_USEC_t uSec)
     seconds = uSec / 1000000;
     uSec -= seconds * 1000000;
     if (sizeof(R4A_TIME_USEC_t) == 4)
-        sprintf(buffer, "%d.%06d", seconds, uSec);
+        sprintf(buffer, "%ld.%06ld", seconds, uSec);
     else
-        sprintf(buffer, "%lld.%06lld", seconds, uSec);
+        sprintf(buffer, "%ld.%06ld", seconds, uSec);
 }
 
 //*********************************************************************
@@ -109,6 +109,6 @@ void r4aTimeDisplayLoopTimes(Print * display,
     r4aTimeFormatLoopTime(timeStdDev, stdDevUsec);
 
     // Display the loop times
-    display->printf("%11s  %11s  %11s  %11s  %6d  %s\r\n",
+    display->printf("%11s  %11s  %11s  %11s  %6ld  %s\r\n",
                     timeAve, timeMax, timeMin, timeStdDev, entries, text);
 }
