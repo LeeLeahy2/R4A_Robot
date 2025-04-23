@@ -16,9 +16,9 @@ SKETCH=05_Bluetooth_Menu
 ESP32_CHIP=esp32wrover
 PARTITION_FILE_NAME=huge_app
 
-ESP_CORE_VERSION=3.1.1
+ESP_CORE_VERSION=3.2.0
 ESPTOOL_VERSION=4.9.dev3
-IDF_VERSION=idf-release_v5.3-cfea4f7c-v1
+IDF_VERSION=idf-release_v5.4-2f7dcd86-v1
 
 ##########
 # OS specific paths
