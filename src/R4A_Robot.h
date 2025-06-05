@@ -296,12 +296,12 @@ void r4aLEDUpdate(bool updateRequest);
 // Take out a lock
 // Inputs:
 //   lock: Address of the lock
-void r4aLockAcquire(volatile int * lock, int moBefore = __ATOMIC_RELAXED, int moAfter = __ATOMIC_RELAXED);
+void r4aLockAcquire(volatile int32_t * lock, int moBefore = __ATOMIC_RELAXED, int moAfter = __ATOMIC_RELAXED);
 
 // Release a lock
 // Inputs:
 //   lock: Address of the lock
-void r4aLockRelease(volatile int * lock, int moBefore = __ATOMIC_RELAXED);
+void r4aLockRelease(volatile int32_t * lock, int moBefore = __ATOMIC_RELAXED);
 
 //****************************************
 // Memory API
