@@ -60,6 +60,11 @@
 #define R4A_EARTH_EQUATORIAL_RADIUS_KM  6378
 #define R4A_EARTH_POLE_RADIUS_KM        6357
 
+// Frequency constants
+#define R4A_FREQ_KHz        1000
+#define R4A_FREQ_MHz        (1000 * R4A_FREQ_KHz)
+#define R4A_FREQ_GHz        (1000 * R4A_FREQ_MHz)
+
 //****************************************
 // Atomic support
 //****************************************
