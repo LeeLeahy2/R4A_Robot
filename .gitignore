@@ -1,7 +1,2 @@
 # Ignore directories
-a
-examples/a
-examples/01_Serial_Menu/build
-examples/02_Telnet_Server/build
-examples/03_Multiple_Menus/build
-examples/04_NTP/build
+examples/*/build
