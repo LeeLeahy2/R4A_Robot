@@ -51,7 +51,7 @@ void r4aMenuBegin(R4A_MENU * menu,
 void r4aMenuBoolHelp(const R4A_MENU_ENTRY * menuEntry, const char * align, Print * display)
 {
     bool * value = (bool *)menuEntry->menuParameter;
-    display->printf("%s: %s%s %s\r\n", menuEntry->command, align,
+    display->printf("%s: %s%s: %s\r\n", menuEntry->command, align,
                     menuEntry->helpText, *value ? "Enabled" : "Disabled");
 }
 
