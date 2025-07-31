@@ -292,6 +292,14 @@ void r4aNtpUpdate(bool wifiConnected)
         r4aNtpClient->update();
         if (r4aNtpClient->isTimeSet())
         {
+            long timeZoneOffsetSeconds;
+
+            timeZoneOffsetSeconds = r4aTimeZoneHours;
+            timeZoneOffsetSeconds *= 60;
+            timeZoneOffsetSeconds += r4aTimeZoneMinutes;
+            timeZoneOffsetSeconds *= 60;
+            timeZoneOffsetSeconds += r4aTimeZoneSeconds;
+            r4aNtpTimeZoneOffsetSeconds = timeZoneOffsetSeconds;
             r4aNtpClient->setTimeOffset(r4aNtpTimeZoneOffsetSeconds);
             r4aNtpOnline = true;
             if (r4aNtpDisplayInitialTime)
