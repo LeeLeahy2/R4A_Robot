@@ -533,8 +533,7 @@ int r4aNtripClientRbRemoveData(Print * display)
 
             // Push data to the GNSS using I2C
             int bytesPushed = r4aNtripClientPushRawData((uint8_t *)&r4aNtripClient._ringBuffer[r4aNtripClient._rbTail],
-                                                        bytesToPush,
-                                                        nullptr);
+                                                        bytesToPush);
             if (bytesPushed == 0)
             {
                 errorPrint->printf("NTRIP buffer --> GNSS failed! bytesWritten: %d\r\n", bytesWritten);

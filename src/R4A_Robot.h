@@ -745,12 +745,10 @@ void r4aNtripClientPrintStatus(Print * display = &Serial);
 // Inputs:
 //   buffer: Address of a buffer containing the data to push to the GNSS
 //   bytesToPush: Number of bytes to push to the GNSS
-//   display: Print object address used to display output
 // Outputs:
 //   Returns the number of bytes successfully pushed to the GNSS
 int r4aNtripClientPushRawData(uint8_t * buffer,
-                              int bytesToPush,
-                              Print * display);
+                              int bytesToPush);
 
 // Remove data from the ring buffer
 // Inputs:
