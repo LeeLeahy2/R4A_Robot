@@ -77,7 +77,7 @@ void r4aReportFatalError(const char * errorMessage,
 
     // Display the error message immediately
     if (display)
-        display->printf("ERROR: %s\r\n", errorMessage);
+        display->printf("HALTED: %s\r\n", errorMessage);
 
     // Output the error message every 15 seconds
     while (true)
@@ -86,7 +86,7 @@ void r4aReportFatalError(const char * errorMessage,
         {
             lastDisplayMsec = millis();
             if (display)
-                display->printf("ERROR: %s\r\n", errorMessage);
+                display->printf("HALTED: %s\r\n", errorMessage);
         }
     }
 }
