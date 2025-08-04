@@ -75,12 +75,18 @@ void r4aReportFatalError(const char * errorMessage,
 {
     static uint32_t lastDisplayMsec;
 
+    // Display the error message immediately
+    if (display)
+        display->printf("ERROR: %s\r\n", errorMessage);
+
+    // Output the error message every 15 seconds
     while (true)
     {
         if ((millis() - lastDisplayMsec) >= (15 * R4A_MILLISECONDS_IN_A_SECOND))
         {
             lastDisplayMsec = millis();
-            display->printf("ERROR: %s\r\n", errorMessage);
+            if (display)
+                display->printf("ERROR: %s\r\n", errorMessage);
         }
     }
 }
