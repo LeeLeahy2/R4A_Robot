@@ -25,8 +25,8 @@ volatile bool r4aLEDColorWritten;
 uint8_t *  r4aLEDFourColorsBitmap;
 uint8_t r4aLEDIntensity = 255;
 uint8_t r4aLEDs;
-R4A_SPI * r4aLEDSpi;
-uint8_t *  r4aLEDTxDmaBuffer;
+const R4A_SPI_DEVICE * r4aLEDSpi;
+uint8_t *  r4aLEDTxBuffer;
 
 //*********************************************************************
 // The WS2812 LED specification uses the following bit definitions at
@@ -189,7 +189,7 @@ void r4aLEDSetIntensity(uint8_t intensity)
 
 //*********************************************************************
 // Initialize the LEDs
-bool r4aLEDSetup(R4A_SPI * spi,
+bool r4aLEDSetup(const R4A_SPI_DEVICE * spiDevice,
                  uint8_t numberOfLEDs)
 {
     int ledBytes;
@@ -198,12 +198,12 @@ bool r4aLEDSetup(R4A_SPI * spi,
     do
     {
         // Determine if the SPI controller object was allocated
-        if (!spi)
+        if (!spiDevice)
         {
             Serial.println("ERROR: No SPI data structure specified!");
             break;
         }
-        r4aLEDSpi = spi;
+        r4aLEDSpi = spiDevice;
 
         // Remember the number of LEDs
         r4aLEDs = numberOfLEDs;
@@ -214,13 +214,13 @@ bool r4aLEDSetup(R4A_SPI * spi,
         // bits / color bit packed in 8 bits per byte
         ledBytes = numberOfLEDs * 4 * 5;
         length = R4A_LED_RESET + ledBytes + R4A_LED_ONES;
-        r4aLEDTxDmaBuffer = (uint8_t *)r4aDmaMalloc(length, "LED color buffer (r4aLEDTxDmaBuffer)");
-        if (!r4aLEDTxDmaBuffer)
+        r4aLEDTxBuffer = (uint8_t *)r4aMalloc(length, "LED color buffer (r4aLEDTxBuffer)");
+        if (!r4aLEDTxBuffer)
         {
-            Serial.println("ERROR: Failed to allocate r4aLEDTxDmaBuffer!");
+            Serial.println("ERROR: Failed to allocate r4aLEDTxBuffer!");
             break;
         }
-        memset(r4aLEDTxDmaBuffer, 0, length);
+        memset(r4aLEDTxBuffer, 0, length);
 
         // Allocate the color array, assume four 8-bit colors per LED
         length = numberOfLEDs << 2;
@@ -261,10 +261,10 @@ bool r4aLEDSetup(R4A_SPI * spi,
         r4aFree((void *)r4aLEDFourColorsBitmap, "LED 4 color bitmap (r4aLEDFourColorsBitmap)");
         r4aLEDFourColorsBitmap = nullptr;
     }
-    if (r4aLEDTxDmaBuffer)
+    if (r4aLEDTxBuffer)
     {
-        r4aDmaFree((void *)r4aLEDTxDmaBuffer, "LED color buffer (r4aLEDTxDmaBuffer)");
-        r4aLEDTxDmaBuffer = nullptr;
+        r4aDmaFree((void *)r4aLEDTxBuffer, "LED color buffer (r4aLEDTxBuffer)");
+        r4aLEDTxBuffer = nullptr;
     }
     return false;
 }
@@ -290,6 +290,7 @@ void r4aLEDUpdate(bool updateRequest)
     int index;
     int intensity;
     static int length;
+    R4A_SPI_BUS * spiBus;
 
     // Check for a color change
     if (r4aLEDColorWritten)
@@ -298,7 +299,7 @@ void r4aLEDUpdate(bool updateRequest)
         updateRequest = true;
 
         // Add the reset sequence
-        data = r4aLEDTxDmaBuffer;
+        data = r4aLEDTxBuffer;
         if (R4A_LED_RESET == 0)
         {
             memset(data, 0, R4A_LED_RESET);
@@ -392,12 +393,15 @@ void r4aLEDUpdate(bool updateRequest)
         }
 
         // Determine the amount of data to send to the LEDs
-        length = data - r4aLEDTxDmaBuffer;
+        length = data - r4aLEDTxBuffer;
     }
 
     // Output the color data to the LEDs
     if (updateRequest && r4aLEDSpi)
-        r4aLEDSpi->transfer(r4aLEDSpi, r4aLEDTxDmaBuffer, nullptr, length);
+    {
+        spiBus = r4aLEDSpi->_spiBus;
+        r4aSpiTransfer(r4aLEDSpi, r4aLEDTxBuffer, nullptr, length, &Serial);
+    }
 }
 
 //****************************************

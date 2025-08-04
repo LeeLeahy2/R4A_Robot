@@ -278,11 +278,11 @@ void r4aLEDSetIntensity(uint8_t intensity);
 
 // Initialize the WS2812 LEDs
 // Inputs:
-//   spi: Address of an R4A_SPI data structure
+//   spiDevice: Address of an R4A_SPI_DEVICE data structure
 //   numberOfLEDs: Number of multi-color LEDs in the string
 // Outputs:
 //   Returns true for successful initialization and false upon error
-bool r4aLEDSetup(struct _R4A_SPI * spi,
+bool r4aLEDSetup(const struct _R4A_SPI_DEVICE * spiDevice,
                  uint8_t numberOfLEDs);
 
 // Turn off the LEDs
@@ -978,31 +978,54 @@ void r4aSerialMenu(R4A_MENU * menu);
 // SPI API
 //****************************************
 
-// Allocate DMA buffer
-// Inputs:
-//   length: Number of data bytes to allocate
-// Outputs:
-//   Returns the buffer address if successful and nullptr otherwise
-typedef uint8_t * (* R4A_SPI_ALLOCATE_DMA_BUFFER)(int length);
-
 // Transfer data to the SPI device
 // Inputs:
-//   spi: Address of an R4A_SPI data structure
+//   spiBus: Address of an R4A_SPI_BUS data structure
+//   txDmaBuffer: Address of the DMA buffer containing the data to send
+//   rxDmaBuffer: Address of the receive DMA data buffer
+//   length: Number of data bytes to transfer
+//   display: Address of Print object for output, maybe nullptr
+// Outputs:
+//   Return true if successful and false upon failure
+typedef bool (* R4A_SPI_TRANSFER)(struct _R4A_SPI_BUS * spiBus,
+                                  const uint8_t * txDmaBuffer,
+                                  uint8_t * rxDmaBuffer,
+                                  size_t length,
+                                  Print * display);
+
+// Describe the SPI bus
+typedef struct _R4A_SPI_BUS
+{
+    uint8_t _busNumber;         // Number of the SPI bus
+    int8_t _pinSCLK;            // GPIO number connected to SPI clock pin, -1 = not connected
+    int8_t _pinMOSI;            // GPIO number connected to SPI MOSI pin, -1 = not connected
+    int8_t _pinMISO;            // GPIO number connected to SPI MISO pin, -1 = not connected
+    R4A_SPI_TRANSFER _transfer; // Routine to perform a SPI transfer
+} R4A_SPI_BUS;
+
+typedef struct _R4A_SPI_DEVICE
+{
+    R4A_SPI_BUS * _spiBus;  // Address of R4A_SPI data structure
+    uint32_t _clockHz;      // SPI clock frequency for device
+    int8_t _pinCS;          // GPIO number connected to chip select pin of device, -1 = not connected
+    bool _clockPolarity;    // 0 or 1
+    bool _clockPhase;       // 0 or 1
+} R4A_SPI_DEVICE;
+
+// Transfer the data to the SPI device
+// Inputs:
+//   spiDevice: Address of an R4A_SPI_DEVICE data structure
 //   txBuffer: Address of the buffer containing the data to send
 //   rxBuffer: Address of the receive data buffer
 //   length: Number of data bytes to transfer
-typedef void (* R4A_SPI_TRANSFER)(struct _R4A_SPI * spi,
-                                  const uint8_t * txBuffer,
-                                  uint8_t * rxBuffer,
-                                  uint32_t length);
-
-typedef struct _R4A_SPI
-{
-    R4A_SPI_ALLOCATE_DMA_BUFFER allocateDmaBuffer;
-    R4A_SPI_TRANSFER transfer;
-} R4A_SPI;
-
-extern R4A_SPI * r4aSpi;
+//   display: Address of Print object for output, maybe nullptr
+// Outputs:
+//   Return true if successful and false upon failure
+bool r4aSpiTransfer(const R4A_SPI_DEVICE * spiDevice,
+                    const uint8_t * txBuffer,
+                    uint8_t * rxBuffer,
+                    size_t length,
+                    Print * display = nullptr);
 
 //****************************************
 // Stricmp API
