@@ -396,9 +396,22 @@ void r4aLEDUpdate(bool updateRequest, Print * display)
         length = data - r4aLEDTxBuffer;
     }
 
-    // Output the color data to the LEDs
+    // Determine if an update to the WS2812 LEDs is needed
     if (updateRequest && r4aLEDSpi)
     {
+        uint32_t currentUsec;
+        bool delayInProgress;
+        static uint32_t lastUpdateUsec;
+
+        // Delay long enough for the WS2812 devices to reset (allow an update)
+        do
+        {
+            currentUsec = micros();
+            delayInProgress = ((currentUsec - lastUpdateUsec) < (50 + 10));
+            lastUpdateUsec = currentUsec;
+        } while (delayInProgress);
+
+        // Output the color data to the LEDs
         spiBus = r4aLEDSpi->_spiBus;
         r4aSpiTransfer(r4aLEDSpi, r4aLEDTxBuffer, nullptr, length, display);
     }
