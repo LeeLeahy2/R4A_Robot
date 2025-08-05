@@ -25,7 +25,7 @@ volatile bool r4aLEDColorWritten;
 uint8_t *  r4aLEDFourColorsBitmap;
 uint8_t r4aLEDIntensity = 255;
 uint8_t r4aLEDs;
-const R4A_SPI_DEVICE * r4aLEDSpi;
+const struct _R4A_SPI_DEVICE * r4aLEDSpi;
 uint8_t *  r4aLEDTxBuffer;
 
 //*********************************************************************

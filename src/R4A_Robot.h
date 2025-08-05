@@ -234,6 +234,8 @@ void r4aDumpBuffer(uint32_t offset,
 #define R4A_LED_RED_SHIFT               16
 #define R4A_LED_WHITE_SHIFT             24
 
+extern const struct _R4A_SPI_DEVICE * r4aLEDSpi;
+
 // Set the WS2812 LED colors
 // Inputs:
 //   ledNumber: Index into the LED color array
