@@ -283,7 +283,7 @@ void r4aLEDsOff()
 
 //*********************************************************************
 // Update the colors on the LEDs
-void r4aLEDUpdate(bool updateRequest)
+void r4aLEDUpdate(bool updateRequest, Print * display)
 {
     uint32_t color;
     uint8_t * data;
@@ -400,7 +400,7 @@ void r4aLEDUpdate(bool updateRequest)
     if (updateRequest && r4aLEDSpi)
     {
         spiBus = r4aLEDSpi->_spiBus;
-        r4aSpiTransfer(r4aLEDSpi, r4aLEDTxBuffer, nullptr, length, &Serial);
+        r4aSpiTransfer(r4aLEDSpi, r4aLEDTxBuffer, nullptr, length, display);
     }
 }
 

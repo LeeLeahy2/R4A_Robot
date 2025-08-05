@@ -292,7 +292,8 @@ void r4aLEDsOff();
 // Inputs:
 //   updateRequest: When true causes color data to be sent to the LEDS
 //                  When false only updates LEDs if color or intensity was changed
-void r4aLEDUpdate(bool updateRequest);
+//   display: Address of the Print object for output
+void r4aLEDUpdate(bool updateRequest, Print * display = nullptr);
 
 //****************************************
 // Lock API
