@@ -300,7 +300,7 @@ void r4aRobotStop(R4A_ROBOT * robot,
             challenge->_stop(challenge);
         }
 
-        // Display the runtime
+        // Display the runtime via serial
         if (display)
         {
             // Split the runtime
@@ -315,7 +315,7 @@ void r4aRobotStop(R4A_ROBOT * robot,
                             challenge->_name, hours, minutes, seconds, milliseconds);
         }
 
-        // Display the runtime
+        // Display the runtime on the LED matrix
         if (robot->_displayTime)
         {
             log_v("Robot: Calling robot->_displayTime");
