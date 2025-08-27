@@ -11,6 +11,7 @@
 #include <Arduino.h>            // Built-in
 #include <base64.h>             // Built-in, needed for NTRIP Client credential encoding
 #include <BluetoothSerial.h>    // Built-in
+#include <byteswap.h>           // Built-in
 #include <esp32-hal-spi.h>      // Built-in
 #include <math.h>               // Built-in
 #include <Network.h>            // Built-in
@@ -953,6 +954,33 @@ void r4aRobotUpdate(R4A_ROBOT * robot,
                     uint32_t currentMsec);
 
 //****************************************
+// Runtime library support
+//****************************************
+
+// Swap the two bytes
+uint16_t r4aBswap16(uint16_t value);
+
+// Swap the four bytes
+uint32_t r4aBswap32(uint32_t value);
+
+// Compare two strings ignoring case
+// Inputs:
+//   str1: Address of a zero terminated string of characters
+//   str2: Address of a zero terminated string of characters
+// Outputs:
+//   Returns the delta value of the last comparison (str1[x] - str2[x])
+int r4aStricmp(const char *str1, const char *str2);
+
+// Compare two strings limited to N characters ignoring case
+// Inputs:
+//   str1: Address of a zero terminated string of characters
+//   str2: Address of a zero terminated string of characters
+//   length: Maximum number of characters to compare
+// Outputs:
+//   Returns the delta value of the last comparison (str1[x] - str2[x])
+int r4aStrincmp(const char *str1, const char *str2, int length);
+
+//****************************************
 // Serial API
 //****************************************
 
@@ -1029,31 +1057,6 @@ bool r4aSpiTransfer(const R4A_SPI_DEVICE * spiDevice,
                     uint8_t * rxBuffer,
                     size_t length,
                     Print * display = nullptr);
-
-//****************************************
-// Stricmp API
-//****************************************
-
-// Compare two strings ignoring case
-// Inputs:
-//   str1: Address of a zero terminated string of characters
-//   str2: Address of a zero terminated string of characters
-// Outputs:
-//   Returns the delta value of the last comparison (str1[x] - str2[x])
-int r4aStricmp(const char *str1, const char *str2);
-
-//****************************************
-// Strincmp API
-//****************************************
-
-// Compare two strings limited to N characters ignoring case
-// Inputs:
-//   str1: Address of a zero terminated string of characters
-//   str2: Address of a zero terminated string of characters
-//   length: Maximum number of characters to compare
-// Outputs:
-//   Returns the delta value of the last comparison (str1[x] - str2[x])
-int r4aStrincmp(const char *str1, const char *str2, int length);
 
 //****************************************
 // Support API
