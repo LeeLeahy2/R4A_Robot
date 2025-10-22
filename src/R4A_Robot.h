@@ -403,7 +403,11 @@ typedef struct _R4A_MENU_ENTRY
 } R4A_MENU_ENTRY;
 
 // Forward declarations
-typedef void (*R4A_PRE_MENU_DISPLAY)(Print * display);
+// Inputs:
+//   display: Address of the Print object for output
+// Outputs:
+//   Returns true if successful and false to force return to main menu
+typedef bool (*R4A_PRE_MENU_DISPLAY)(Print * display);
 
 typedef struct _R4A_MENU_TABLE
 {

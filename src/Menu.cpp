@@ -262,7 +262,14 @@ bool r4aMenuProcess(R4A_MENU * menu,
                 display->println();
 
             // Display the data before the menu
-            menu->_menu->preMenu(display);
+            if (menu->_menu->preMenu(display) == false)
+            {
+                // Return to the main menu
+                menu->_menu = &menu->_menuTable[0];
+                if (menu->_debug)
+                    Serial.printf("_menu: %p\r\n", menu->_menu);
+                return false;
+            }
         }
 
         // Separate the preMenu display from the menu header
