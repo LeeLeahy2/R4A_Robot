@@ -8,6 +8,22 @@
 #include "R4A_Robot.h"
 
 //*********************************************************************
+// Select or deselect the SPI device
+// Inputs:
+//   spiDevice: Address of an R4A_SPI_DEVICE data structure
+//   select: Set true to access the chip and false to prevent chip access
+static void r4aSpiChipSelect(const R4A_SPI_DEVICE * spiDevice, bool select)
+{
+    int8_t pin;
+    uint8_t selectValue;
+
+    pin = spiDevice->_pinCS;
+    selectValue = spiDevice->_chipSelectValue;
+    if (pin >= 0)
+        digitalWrite(pin, select ? selectValue : !selectValue);
+}
+
+//*********************************************************************
 // Transfer the data to the SPI device
 bool r4aSpiTransfer(const R4A_SPI_DEVICE * spiDevice,
                     const uint8_t * txBuffer,
@@ -26,6 +42,9 @@ bool r4aSpiTransfer(const R4A_SPI_DEVICE * spiDevice,
         // Get the SPI bus
         spiBus = spiDevice->_spiBus;
         success = false;
+
+        // Use the chip select to enable the SPI device
+        r4aSpiChipSelect(spiDevice, true);
 
         // Describe the SPI transaction
         rxDmaBuffer = nullptr;
@@ -79,6 +98,9 @@ bool r4aSpiTransfer(const R4A_SPI_DEVICE * spiDevice,
                 r4aDumpBuffer((uintptr_t)rxBuffer, rxBuffer, length);
         }
     } while (0);
+
+    // Disable the SPI device using the chip select
+    r4aSpiChipSelect(spiDevice, false);
 
     // Free the DMA buffers
     if (rxDmaBuffer)

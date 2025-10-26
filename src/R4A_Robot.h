@@ -1043,6 +1043,7 @@ typedef struct _R4A_SPI_DEVICE
     R4A_SPI_BUS * _spiBus;  // Address of R4A_SPI data structure
     uint32_t _clockHz;      // SPI clock frequency for device
     int8_t _pinCS;          // GPIO number connected to chip select pin of device, -1 = not connected
+    bool _chipSelectValue;  // 0 or 1, value to enable chip operations
     bool _clockPolarity;    // 0 or 1
     bool _clockPhase;       // 0 or 1
 } R4A_SPI_DEVICE;
