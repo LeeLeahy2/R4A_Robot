@@ -133,6 +133,29 @@ void r4aRobotStopped(R4A_ROBOT * robot,
 //*********************************************************************
 
 //*********************************************************************
+// Get the runtime in milliseconds
+// Inputs:
+//   robot: Address of an R4A_ROBOT data structure
+//   currentMsec: Current time in milliseconds since boot
+// Outputs:
+//   Returns the delta time in milliseconds
+uint32_t r4aRobotGetRunTime(R4A_ROBOT * robot, uint32_t currentMsec)
+{
+    return currentMsec - robot->_startMsec;
+}
+
+//*********************************************************************
+// Get the challenge stop time in milliseconds since boot
+// Inputs:
+//   robot: Address of an R4A_ROBOT data structure
+// Outputs:
+//   Returns the challenge stop time in milliseconds
+uint32_t r4aRobotGetStopTime(R4A_ROBOT * robot)
+{
+    return robot->_stopMsec;
+}
+
+//*********************************************************************
 // Initialize the robot data structure
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure

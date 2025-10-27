@@ -909,6 +909,21 @@ typedef struct _R4A_ROBOT
     R4A_ROBOT_TIME_CALLBACK _idle;  // Maybe set to nullptr
 } R4A_ROBOT;
 
+// Get the runtime in milliseconds
+// Inputs:
+//   robot: Address of an R4A_ROBOT data structure
+//   currentMsec: Current time in milliseconds since boot
+// Outputs:
+//   Returns the delta time in milliseconds
+uint32_t r4aRobotGetRunTime(R4A_ROBOT * robot, uint32_t currentMsec);
+
+// Get the challenge stop time in milliseconds since boot
+// Inputs:
+//   robot: Address of an R4A_ROBOT data structure
+// Outputs:
+//   Returns the challenge stop time in milliseconds
+uint32_t r4aRobotGetStopTime(R4A_ROBOT * robot);
+
 // Initialize the robot data structure
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
