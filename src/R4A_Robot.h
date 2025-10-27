@@ -881,18 +881,18 @@ typedef struct _R4A_ROBOT
 {
     // Private
 
-    volatile bool _busy;    // True while challenge is running
+    volatile bool _busy;        // True while challenge is running
     volatile R4A_ROBOT_CHALLENGE * _challenge;  // Address of challenge object
-    int _core;              // CPU core number
-    uint32_t _afterRunMsec; // Delay after robot's run and switching to idle
-    uint32_t _endMsec;      // Challenge end time in milliseconds since boot
-    uint32_t _idleMsec;     // Last idle time in milliseconds since boot
-    uint32_t _initMsec;     // Challenge init time in milliseconds since boot
-    uint32_t _nextDisplayMsec; // Next time display time should be called in milliseconds since boot
-    uint32_t _startDelayMsec;  // Number of milliseconds before starting the challenge
-    uint32_t _startMsec;    // Challenge start time in milliseconds since boot
-    uint32_t _stopMsec;     // Challenge stop time in milliseconds since boot
-    uint8_t _state;         // Next state for robot operation
+    int _core;                  // CPU core number
+    uint32_t _afterRunMsec;     // Delay after robot's run and switching to idle
+    uint32_t _endMsec;          // Challenge end time in milliseconds since boot
+    uint32_t _idleMsec;         // Last idle time in milliseconds since boot
+    uint32_t _initMsec;         // Challenge init time in milliseconds since boot
+    uint32_t _nextDisplayMsec;  // Next time display time should be called in milliseconds since boot
+    uint32_t _startDelayMsec;   // Number of milliseconds before starting the challenge
+    uint32_t _startMsec;        // Challenge start time in milliseconds since boot
+    uint32_t _stopMsec;         // Challenge stop time in milliseconds since boot
+    volatile uint8_t _state;    // Next state for robot operation
 
     // Called by the init routine to display the countdown time
     // Called by the initial delay routine to display the countdown time
