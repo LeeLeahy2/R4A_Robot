@@ -1079,6 +1079,438 @@ bool r4aSpiTransfer(const R4A_SPI_DEVICE * spiDevice,
                     Print * display = nullptr);
 
 //****************************************
+// SPI Flash API
+//****************************************
+
+#define R4A_SPI_FLASH_9F_ID_BYTES       3
+
+// Routine to update the write protect pin state, use when a GPIO is not connected
+// Inputs:
+//   enable: Set true to enable writes to the chip and false to protect the chip
+// Outputs:
+//   Returns true if the write protection was set properly
+typedef bool (* R4A_SPI_FLASH_WRITE_ENABLE_PIN_STATE)(bool enable);
+
+// Routine to decode and display the SPI Flash status register value
+// Inputs:
+//   status: SPI Flash status register value
+//   display: Address of Print object for output
+typedef void (* R4A_SPI_FLASH_DISPLAY_STATUS)(uint8_t status, Print * display);
+
+typedef struct _R4A_SPI_FLASH_PROTECTION
+{
+    uint32_t _flashAddress;
+    int8_t _readProtectBit;
+    int8_t _writeProtectBit;
+} R4A_SPI_FLASH_PROTECTION;
+
+typedef struct _R4A_SPI_FLASH
+{
+    R4A_SPI_DEVICE _flashChip;  // SPI NOR flash device configuration
+    int8_t _pinHold;            // GPIO pin number for the HOLD# pin
+    int8_t _pinWriteProtect;    // GPIO pin number for the WP# pin
+    R4A_SPI_FLASH_WRITE_ENABLE_PIN_STATE _writeEnablePinState;
+    R4A_SPI_FLASH_DISPLAY_STATUS _displayStatus;
+    const R4A_SPI_FLASH_PROTECTION * _blockProtect; // Block protection table
+    uint32_t _flashBytes;           // Flash size in bytes
+    uint8_t _blockProtectBytes;     // Length in bytes of the block protection register
+    uint8_t _stsWriteInProgress;    // Status bit indicating write activity
+    uint8_t _stsEraseErrors;        // Status bits indicating erase errors
+    uint8_t _stsProgramErrors;      // Status bits indicating program errors
+} R4A_SPI_FLASH;
+
+extern const R4A_SPI_FLASH * r4aSpiFlash;
+
+// Initialize the connection to the SPI flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+bool r4aSpiFlashBegin(const R4A_SPI_FLASH * spiFlash);
+
+// Enable/disable read access to the block containing the specified address
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address within the block to protect
+//   enable: Set true to enable writes and false to prevent writes
+//   status: Address to receive the final write status
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write access was successfully updated and false upon error
+bool r4aSpiFlashBlockReadProtection(const R4A_SPI_FLASH * spiFlash,
+                                    uint32_t flashAddress,
+                                    bool enable,
+                                    uint8_t * status,
+                                    Print * display);
+
+// Enable/disable block read access
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   enable: Set true to enable writes and false to prevent writes
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write access was successfully updated and false upon error
+bool r4aSpiFlashBlockReadProtectionAll(const R4A_SPI_FLASH * spiFlash,
+                                       bool enable,
+                                       Print * display);
+
+// Enable/disable write access to the block containing the specified address
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address within the block to protect
+//   enable: Set true to enable writes and false to prevent writes
+//   status: Address to receive the final write status
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write access was successfully updated and false upon error
+bool r4aSpiFlashBlockWriteProtection(const R4A_SPI_FLASH * spiFlash,
+                                     uint32_t flashAddress,
+                                     bool enable,
+                                     uint8_t * status,
+                                     Print * display);
+
+// Enable/disable block write access
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   enable: Set true to enable writes and false to prevent writes
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write access was successfully updated and false upon error
+bool r4aSpiFlashBlockWriteProtectionAll(const R4A_SPI_FLASH * spiFlash,
+                                     bool enable,
+                                     Print * display);
+
+// Allocate the DMA buffer
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+// Outputs:
+//   Returns true if the DMA buffer was allocated and false upon failure
+bool r4aSpiFlashDmaBufferAllocate(const R4A_SPI_FLASH * spiFlash);
+
+// Release the DMA buffer
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+void r4aSpiFlashDmaBufferRelease(const R4A_SPI_FLASH * spiFlash);
+
+// Erase a block (8K, 32K or 65K bytes) from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address within the block to erase
+//   status: Address of buffer to receive the final status
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the block erase was successful and false upon error
+bool r4aSpiFlashEraseBlock(const R4A_SPI_FLASH * spiFlash,
+                           uint32_t flashAddress,
+                           uint8_t * status,
+                           Print * display);
+
+// Erase the entire SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   status: Address to receive the final write status
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the erase was successful and false upon error
+bool r4aSpiFlashEraseChip(const R4A_SPI_FLASH * spiFlash,
+                          uint8_t * status,
+                          Print * display);
+
+// Erase a sector (4K bytes) from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address within the sector to erase
+//   status: Address of buffer to receive the final status
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the subsector erase was successful and false upon error
+bool r4aSpiFlashEraseSector(const R4A_SPI_FLASH * spiFlash,
+                            uint32_t flashAddress,
+                            uint8_t * status,
+                            Print * display);
+
+// Enable/disable read access to block containing the specified address
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuBlockProtectionRead(const R4A_MENU_ENTRY * menuEntry,
+                                        const char * command,
+                                        Print * display);
+
+// Enable/disable read access to all blocks
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuBlockProtectionReadAll(const R4A_MENU_ENTRY * menuEntry,
+                                           const char * command,
+                                           Print * display);
+
+// Read block protection register from the SPI flash device
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuBlockProtectionStatus(const R4A_MENU_ENTRY * menuEntry,
+                                          const char * command,
+                                          Print * display);
+
+// Enable/disable write access to block containing the specified address
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuBlockProtectionWrite(const R4A_MENU_ENTRY * menuEntry,
+                                         const char * command,
+                                         Print * display);
+
+// Enable/disable write access to all blocks
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuBlockProtectionWriteAll(const R4A_MENU_ENTRY * menuEntry,
+                                            const char * command,
+                                            Print * display);
+
+// Erase a 4K block of the SPI flash
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuErase4K(const R4A_MENU_ENTRY * menuEntry,
+                            const char * command,
+                            Print * display);
+
+// Erase a 65K block of the SPI flash
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuErase65K(const R4A_MENU_ENTRY * menuEntry,
+                             const char * command,
+                             Print * display);
+
+// Erase the entire SPI flash
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuEraseChip(const R4A_MENU_ENTRY * menuEntry,
+                              const char * command,
+                              Print * display);
+
+// Read data from the SPI flash
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuReadData(const R4A_MENU_ENTRY * menuEntry,
+                             const char * command,
+                             Print * display);
+
+// Read ID from the SPI flash device
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuReadId9e(const R4A_MENU_ENTRY * menuEntry,
+                             const char * command,
+                             Print * display);
+
+// Read ID from the SPI flash device
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuReadId9f(const R4A_MENU_ENTRY * menuEntry,
+                             const char * command,
+                             Print * display);
+
+// Read the discovery parameters from the SPI flash
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuReadParameters(const R4A_MENU_ENTRY * menuEntry,
+                                   const char * command,
+                                   Print * display);
+
+// Read and display the status register
+// Inputs:
+//   menuEntry: Address of an R4A_MENU_ENTRY data structure
+//   command: Address of a zero terminated string containing the command
+//   display: Address of the serial output device
+void r4aSpiFlashMenuReadStatusRegister(const R4A_MENU_ENTRY * menuEntry,
+                                       const char * command,
+                                       Print * display);
+
+// Enable or disable SPI NOR Flash writes using the WP# pin
+// Inputs:
+//   menuEntry: Address of the object describing the menu entry
+//   command: Zero terminated command string
+//   display: Device used for output
+void r4aSpiFlashMenuWriteEnable(const R4A_MENU_ENTRY * menuEntry,
+                                const char * command,
+                                Print * display);
+
+// Read data from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address of the first SPI flash byte to read
+//   dataBuffer: Buffer to receive the SPI flash data
+//   length: Number of bytes to read from the SPI flash
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the read was successful and false upon error
+bool r4aSpiFlashRead(const R4A_SPI_FLASH * spiFlash,
+                     uint32_t flashAddress,
+                     uint8_t * dataBuffer,
+                     size_t length,
+                     Print * display);
+
+// Read the block protection register from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   dataBuffer: Buffer to receive the block protection
+//   length: Number of bytes to read from the SPI flash (1 - 18)
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the read was successful and false upon error
+bool r4aSpiFlashBlockProtectionStatus(const R4A_SPI_FLASH * spiFlash,
+                                      uint8_t * dataBuffer,
+                                      size_t length,
+                                      Print * display);
+
+// Read the discovery parameters from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address of the first SPI flash byte to read
+//   dataBuffer: Buffer to receive the SPI flash data
+//   length: Number of bytes to read from the SPI flash
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the read ID was successful and false upon error
+bool r4aSpiFlashReadDiscoveryParameters(const R4A_SPI_FLASH * spiFlash,
+                                        uint32_t flashAddress,
+                                        uint8_t * dataBuffer,
+                                        size_t length,
+                                        Print * display);
+
+// Read the ID from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   dataBuffer: Buffer to receive the SPI flash data
+//   length: Number of bytes to read from the SPI flash
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the read ID was successful and false upon error
+bool r4aSpiFlashReadId9e(const R4A_SPI_FLASH * spiFlash,
+                         uint8_t * dataBuffer,
+                         size_t length,
+                         Print * display);
+
+// Read the ID from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   dataBuffer: Buffer to receive the SPI flash data of R4A_SPI_FLASH_9F_ID_BYTES
+//   length: Number of bytes to read from the SPI flash
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the read ID was successful and false upon error
+bool r4aSpiFlashReadId9f(const R4A_SPI_FLASH * spiFlash,
+                         uint8_t dataBuffer,
+                         Print * display);
+
+// Get the maximum read length
+size_t r4aSpiFlashReadMaxLength(const R4A_SPI_FLASH * spiFlash);
+
+// Read status register from the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   status: Buffer to receive the SPI flash status register
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the read was successful and false upon error
+bool r4aSpiFlashReadStatusRegister(const R4A_SPI_FLASH * spiFlash,
+                                   uint8_t * status,
+                                   Print * display);
+
+// Write data to the SPI NOR flash
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   flashAddress: Address of the first SPI flash byte to write
+//   writeBuffer: Buffer containing data to write
+//   length: Number of bytes to write to the SPI flash
+//   status: Address to receive the final write status
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write was successful and false upon error
+bool r4aSpiFlashWrite(const R4A_SPI_FLASH * spiFlash,
+                      uint32_t flashAddress,
+                      uint8_t * writeBuffer,
+                      size_t length,
+                      uint8_t * status,
+                      Print * display);
+
+// Disable write operations
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write disable was successful and false upon error
+bool r4aSpiFlashWriteDisable(const R4A_SPI_FLASH * spiFlash,
+                             Print * display);
+
+// Write status operations
+// Inputs:
+//   spiFlash: Address of an R4A_SPI_FLASH data structure
+//   status: New status value
+//   display: Address of Print object for output, may be nullptr
+// Outputs:
+//   Returns true if the write status was successful and false upon error
+bool r4aSpiFlashWriteStatus(const R4A_SPI_FLASH * spiFlash,
+                            uint8_t status,
+                            Print * display);
+
+//****************************************
+// SPI Flash Server API
+//****************************************
+
+#define CMD_READ_COMMAND            0
+#define CMD_READ_DATA               1
+#define CMD_WRITE_DATA              2
+#define CMD_WRITE_SUCCESS           3
+#define CMD_ERASE_CHIP              4
+#define CMD_ERASE_SUCCESS           5
+#define CMD_BLOCK_WRITE_ENABLE      6
+#define CMD_BLOCK_ENABLE_SUCCESS    7
+
+typedef struct _R4A_SPI_FLASH_COMMAND
+{
+    uint32_t _flashAddress;     // Flash address
+    uint16_t _lengthInBytes;    // Number of bytes to read or write
+    uint8_t _command;           // See CMD_* above
+} R4A_SPI_FLASH_COMMAND;
+
+// Initialize the SPI NOR Flash server
+// Inputs:
+//   ipAddress: IP address of the server
+//   port: Server port number
+// Outputs:
+//   Returns true following successful server initialization and false
+//   upon failure.
+bool r4aSpiFlashServerBegin(IPAddress ipAddress, uint16_t port);
+
+// Done with the SPI NOR Flash server
+void r4aSpiFlashServerEnd();
+
+// Update the server state
+// Inputs:
+//   connected: Set to true when connected to the network and false when
+//   not connected
+void r4aSpiFlashServerUpdate(bool connected);
+
+//****************************************
 // Support API
 //****************************************
 
