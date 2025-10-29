@@ -934,14 +934,12 @@ uint32_t r4aRobotGetStopTime(R4A_ROBOT * robot);
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
 //   core: CPU core that is running the robot layer
-//   startDelaySec: Number of seconds before the robot starts a challenge
 //   afterRunSec: Number of seconds after the robot completes a challenge
 //                before the robot layer switches back to the idle state
 //   idle: Address of the idle routine, may be nullptr
 //   displayTime: Address of the routine to display the time, may be nullptr
 void r4aRobotInit(R4A_ROBOT * robot,
                   int core = 0,
-                  uint32_t startDelaySec = 10,
                   uint32_t afterRunSec = 30,
                   R4A_ROBOT_TIME_CALLBACK idle = nullptr,
                   R4A_ROBOT_TIME_CALLBACK displayTime = nullptr);
@@ -964,9 +962,11 @@ bool r4aRobotIsRunning(R4A_ROBOT * robot);
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
 //   challenge: Address of challenge object
+//   startDelaySec: Number of seconds before the robot starts a challenge
 //   display: Device used for output
 bool r4aRobotStart(R4A_ROBOT * robot,
                    R4A_ROBOT_CHALLENGE * challenge,
+                   uint32_t startDelaySec = 5,
                    Print * display = &Serial);
 
 // Stop the robot
