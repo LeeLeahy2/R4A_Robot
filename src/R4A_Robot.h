@@ -875,7 +875,6 @@ enum ROBOT_STATES
     ROBOT_STATE_IDLE = 0,   // The robot layer is idle
     ROBOT_STATE_COUNT_DOWN, // The robot layer is counting down to start
     ROBOT_STATE_RUNNING,    // The robot layer is running the challenge
-    ROBOT_STATE_STOP,       // The robot layer is stopped
 };
 
 // Display the delta time
@@ -890,9 +889,7 @@ typedef struct _R4A_ROBOT
     volatile bool _busy;        // True while challenge is running
     volatile R4A_ROBOT_CHALLENGE * _challenge;  // Address of challenge object
     int _core;                  // CPU core number
-    uint32_t _afterRunMsec;     // Delay after robot's run and switching to idle
     uint32_t _endMsec;          // Challenge end time in milliseconds since boot
-    uint32_t _idleMsec;         // Last idle time in milliseconds since boot
     uint32_t _initMsec;         // Challenge init time in milliseconds since boot
     uint32_t _nextDisplayMsec;  // Next time display time should be called in milliseconds since boot
     uint32_t _startDelayMsec;   // Number of milliseconds before starting the challenge
@@ -934,13 +931,10 @@ uint32_t r4aRobotGetStopTime(R4A_ROBOT * robot);
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
 //   core: CPU core that is running the robot layer
-//   afterRunSec: Number of seconds after the robot completes a challenge
-//                before the robot layer switches back to the idle state
 //   idle: Address of the idle routine, may be nullptr
 //   displayTime: Address of the routine to display the time, may be nullptr
 void r4aRobotInit(R4A_ROBOT * robot,
                   int core = 0,
-                  uint32_t afterRunSec = 30,
                   R4A_ROBOT_TIME_CALLBACK idle = nullptr,
                   R4A_ROBOT_TIME_CALLBACK displayTime = nullptr);
 

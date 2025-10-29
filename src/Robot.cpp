@@ -109,26 +109,6 @@ void r4aRobotInitialDelay(R4A_ROBOT * robot,
 }
 
 //*********************************************************************
-// Wait after stopping the robot before switching to idle
-// Inputs:
-//   robot: Address of an R4A_ROBOT data structure
-void r4aRobotStopped(R4A_ROBOT * robot,
-                     uint32_t currentMsec)
-{
-    // Initialize the delay
-    if (robot->_idleMsec == 0)
-        robot->_idleMsec = currentMsec;
-
-    // Delay for a while
-    if ((currentMsec - robot->_stopMsec) >= robot->_afterRunMsec)
-    {
-        r4aLEDsOff();
-        log_v("Robot: Switching to IDLE state");
-        SWITCH_STATE(ROBOT_STATE_IDLE);
-    }
-}
-
-//*********************************************************************
 // Public API functions
 //*********************************************************************
 
@@ -160,17 +140,13 @@ uint32_t r4aRobotGetStopTime(R4A_ROBOT * robot)
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
 //   core: CPU core that is running the robot layer
-//   afterRunSec: Number of seconds after the robot completes a challenge
-//                before the robot layer switches back to the idle state
 //   idle: Address of the idle routine, may be nullptr
 //   displayTime: Address of the routine to display the time, may be nullptr
 void r4aRobotInit(R4A_ROBOT * robot,
                   int core,
-                  uint32_t afterRunSec,
                   R4A_ROBOT_TIME_CALLBACK idle,
                   R4A_ROBOT_TIME_CALLBACK displayTime)
 {
-    robot->_afterRunMsec = afterRunSec * R4A_MILLISECONDS_IN_A_SECOND;
     robot->_busy = false;
     robot->_challenge = nullptr;
     robot->_core = core;
@@ -251,7 +227,6 @@ bool r4aRobotStart(R4A_ROBOT * robot,
 
     // Compute the times for the challenge
     currentMsec = millis();
-    robot->_idleMsec = 0;
     robot->_initMsec = currentMsec;
     robot->_nextDisplayMsec = currentMsec;
     robot->_startMsec = robot->_initMsec + robot->_startDelayMsec;
@@ -314,9 +289,9 @@ void r4aRobotStop(R4A_ROBOT * robot,
 
     log_v("Robot: r4aRobotStop called");
 
-    // Stop the robot just once by setting _state to ROBOT_STATE_STOP
-    log_v("Robot: Switching state to STOP");
-    state = SWITCH_STATE(ROBOT_STATE_STOP);
+    // Stop the robot
+    log_v("Robot: Switching state to IDLE");
+    state = SWITCH_STATE(ROBOT_STATE_IDLE);
     if ((state == ROBOT_STATE_RUNNING) || (state == ROBOT_STATE_COUNT_DOWN))
     {
         robot->_stopMsec = currentMsec;
@@ -380,8 +355,6 @@ void r4aRobotUpdate(R4A_ROBOT * robot,
         r4aRobotRunning(robot, currentMsec);
     else if (state == ROBOT_STATE_COUNT_DOWN)
         r4aRobotInitialDelay(robot, currentMsec);
-    else if (state == ROBOT_STATE_STOP)
-        r4aRobotStopped(robot, currentMsec);
     else if (state == ROBOT_STATE_IDLE)
     {
         if (robot->_idle)
