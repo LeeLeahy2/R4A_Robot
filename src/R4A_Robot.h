@@ -823,6 +823,8 @@ String * r4aReadLine(bool echo, String * buffer, NetworkClient * port);
 #define R4A_CHALLENGE_SEC_LINE_FOLLOWING    (3 * R4A_SECONDS_IN_A_MINUTE)
 #define R4A_CHALLENGE_SEC_WAYPOINT_FOLLOWING (15 * R4A_SECONDS_IN_A_MINUTE)
 
+#define R4A_CHALLENGE_SEC_START_DELAY       5   // Seconds
+
 // The robotRunning routine calls this routine to actually perform
 // the challenge.  This routine typically reads a sensor and may
 // optionally adjust the motors based upon the sensor reading.  The
