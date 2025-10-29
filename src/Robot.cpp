@@ -200,6 +200,17 @@ bool r4aRobotIsActive(R4A_ROBOT * robot)
 }
 
 //*********************************************************************
+// Determine if the robot layer is running
+// Inputs:
+//   robot: Address of an R4A_ROBOT data structure
+// Outputs:
+//   Returns true when the robot is in the running state and false otherwise
+bool r4aRobotIsRunning(R4A_ROBOT * robot)
+{
+    return (robot->_state == ROBOT_STATE_RUNNING);
+}
+
+//*********************************************************************
 // Determine if it is possible to start the robot
 // Inputs:
 //   robot: Address of an R4A_ROBOT data structure
