@@ -1010,6 +1010,10 @@ int r4aStrincmp(const char *str1, const char *str2, int length);
 // Serial API
 //****************************************
 
+// Display an error message on a regular interval
+void r4aReportErrorMessage(const char * errorMessage,
+                           Print * display = &Serial);
+
 // Repeatedly display a fatal error message
 // Inputs:
 //   errorMessage: Zero terminated string of characters containing the

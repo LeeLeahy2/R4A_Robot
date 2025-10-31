@@ -69,6 +69,22 @@ String * r4aReadLine(bool echo, String * buffer, HardwareSerial * port)
 }
 
 //*********************************************************************
+// Display an error message on a regular interval
+void r4aReportErrorMessage(const char * errorMessage,
+                           Print * display)
+{
+    static uint32_t lastDisplayMsec;
+
+    // Output the error message every 15 seconds
+    while ((millis() - lastDisplayMsec) >= (15 * R4A_MILLISECONDS_IN_A_SECOND))
+    {
+        lastDisplayMsec = millis();
+        if (display)
+            display->printf("ERROR: %s\r\n", errorMessage);
+    }
+}
+
+//*********************************************************************
 // Repeatedly display a fatal error message
 void r4aReportFatalError(const char * errorMessage,
                          Print * display)
