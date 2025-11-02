@@ -1041,14 +1041,14 @@ void r4aSerialMenu(R4A_MENU * menu);
 
 // Transfer data to the SPI device
 // Inputs:
-//   spiBus: Address of an R4A_SPI_BUS data structure
+//   spiDevice: Address of an R4A_SPI_DEVICE data structure
 //   txDmaBuffer: Address of the DMA buffer containing the data to send
 //   rxDmaBuffer: Address of the receive DMA data buffer
 //   length: Number of data bytes to transfer
 //   display: Address of Print object for output, maybe nullptr
 // Outputs:
 //   Return true if successful and false upon failure
-typedef bool (* R4A_SPI_TRANSFER)(struct _R4A_SPI_BUS * spiBus,
+typedef bool (* R4A_SPI_TRANSFER)(const struct _R4A_SPI_DEVICE * spiDevice,
                                   const uint8_t * txDmaBuffer,
                                   uint8_t * rxDmaBuffer,
                                   size_t length,
@@ -1066,13 +1066,20 @@ typedef struct _R4A_SPI_BUS
 
 typedef struct _R4A_SPI_DEVICE
 {
-    R4A_SPI_BUS * _spiBus;  // Address of R4A_SPI data structure
+    const R4A_SPI_BUS * _spiBus; // Address of R4A_SPI data structure
+    void * _cpuContext;     // Address of CPU specific context data structure
     uint32_t _clockHz;      // SPI clock frequency for device
     int8_t _pinCS;          // GPIO number connected to chip select pin of device, -1 = not connected
     bool _chipSelectValue;  // 0 or 1, value to enable chip operations
     bool _clockPolarity;    // 0 or 1
     bool _clockPhase;       // 0 or 1
 } R4A_SPI_DEVICE;
+
+// Select or deselect the SPI device
+// Inputs:
+//   spiDevice: Address of an R4A_SPI_DEVICE data structure
+//   select: Set true to access the chip and false to prevent chip access
+void r4aSpiChipSelect(const R4A_SPI_DEVICE * spiDevice, bool select);
 
 // Transfer the data to the SPI device
 // Inputs:

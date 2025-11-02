@@ -290,7 +290,6 @@ void r4aLEDUpdate(bool updateRequest, Print * display)
     int index;
     int intensity;
     static int length;
-    R4A_SPI_BUS * spiBus;
 
     // Check for a color change
     if (r4aLEDColorWritten)
@@ -412,7 +411,6 @@ void r4aLEDUpdate(bool updateRequest, Print * display)
         } while (delayInProgress);
 
         // Output the color data to the LEDs
-        spiBus = r4aLEDSpi->_spiBus;
         r4aSpiTransfer(r4aLEDSpi, r4aLEDTxBuffer, nullptr, length, display);
     }
 }
