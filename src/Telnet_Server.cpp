@@ -63,6 +63,7 @@ bool R4A_TELNET_SERVER::begin(IPAddress ipAddress, uint16_t port)
             break;
         }
         memset(_clients, 0, length);
+        _activeClients = 0;
 
         // Allocate the network object
         log_v("Telnet Server: Allocating NetworkServer object");
@@ -119,6 +120,7 @@ void R4A_TELNET_SERVER::end()
             if (_clients[i])
                 closeClient(i);
         }
+        _activeClients = 0;
     }
 
     // Done with the server
