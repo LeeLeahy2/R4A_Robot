@@ -13,10 +13,12 @@
 R4A_TELNET_SERVER::R4A_TELNET_SERVER(uint16_t maxClients,
                                      R4A_TELNET_CLIENT_PROCESS_INPUT processInput,
                                      R4A_TELNET_CONTEXT_CREATE contextCreate,
-                                     R4A_TELNET_CONTEXT_DELETE contextDelete)
+                                     R4A_TELNET_CONTEXT_DELETE contextDelete,
+                                     uint16_t port
+                                     )
     : _activeClients{0}, _clients{nullptr}, _contextCreate{contextCreate},
       _contextDelete{contextDelete}, _ipAddress{IPAddress((uint32_t)0)},
-      _maxClients{maxClients}, _port{0}, _processInput{processInput},
+      _maxClients{maxClients}, _port{port}, _processInput{processInput},
       _server{nullptr}
 {
 }
@@ -40,7 +42,7 @@ R4A_TELNET_SERVER::~R4A_TELNET_SERVER()
 // Initialize the telnet server
 // Returns true following successful server initialization and false
 // upon failure.
-bool R4A_TELNET_SERVER::begin(IPAddress ipAddress, uint16_t port)
+bool R4A_TELNET_SERVER::begin(IPAddress ipAddress)
 {
     size_t length;
 
@@ -51,7 +53,6 @@ bool R4A_TELNET_SERVER::begin(IPAddress ipAddress, uint16_t port)
     {
         // Save the port for display
         _ipAddress = ipAddress;
-        _port = port;
 
         // Allocate the client list
         length = _maxClients * sizeof(R4A_TELNET_CLIENT *);
@@ -111,17 +112,29 @@ void R4A_TELNET_SERVER::closeClient(uint16_t i)
 // Restore state to just after constructor execution
 void R4A_TELNET_SERVER::end()
 {
-    // Done with the client list
+    R4A_TELNET_CLIENT * client;
+    int i;
+
+    // Verify that the client array was allocated
     if (_clients)
     {
-        // Done with each of the clients
-        for (int i = 0; i < _maxClients; i++)
+        // Disconnect all of the client connections
+        for (i = 0; i < _maxClients; i++)
         {
-            if (_clients[i])
+            client = _clients[i];
+            if (client)
+            {
+                // Break the connection with the client
+                client->disconnect();
+
+                // Free this client slot
                 closeClient(i);
+            }
         }
-        _activeClients = 0;
     }
+
+    // No more clients
+    _activeClients = 0;
 
     // Done with the server
     if (_server)
@@ -130,7 +143,6 @@ void R4A_TELNET_SERVER::end()
         delete _server;
         _server = nullptr;
         _ipAddress = IPAddress{(uint32_t)0};
-        _port = 0;
     }
 }
 
@@ -237,47 +249,64 @@ void R4A_TELNET_SERVER::serverInfo(Print * display)
 
 //*********************************************************************
 // Update the server state
-void R4A_TELNET_SERVER::update(bool connected)
+void R4A_TELNET_SERVER::update(bool telnetEnable, bool wifiStaConnected)
 {
     R4A_TELNET_CLIENT * client;
     uint8_t i;
 
-    // Determine if the network is still working
-    if (connected)
+    switch (_state)
     {
-        // Check if there are any new clients
-        if (_server && _server->hasClient())
-            newClient();
+    case TELNET_STATE_OFF:
+        // Determine if telnet is starting
+        if (telnetEnable)
+            _state = TELNET_STATE_WAIT_FOR_NETWORK;
+        break;
 
-        // Check clients for data
-        for (i = 0; i < _maxClients; i++)
+    case TELNET_STATE_WAIT_FOR_NETWORK:
+        // Determine if telnet is being stopped
+        if (telnetEnable == false)
+            _state = TELNET_STATE_OFF;
+
+        // Determine if the network is available
+        else if (wifiStaConnected)
         {
-            client = _clients[i];
-            if (client)
-            {
-                // Process any incoming data, return the connection status
-                if (!client->processInput())
+            // The network is available, start the telnet server
+            begin(WiFi.STA.localIP());
+            Serial.printf("Telnet: %s:%d\r\n", WiFi.localIP().toString().c_str(),
+                          _port);
+            _state = TELNET_STATE_RUNNING;
+        }
+        break;
 
-                    // Broken connection, free this slot
-                    closeClient(i);
+    case TELNET_STATE_RUNNING:
+        // Determine if the network has failed or telnet is being stopped
+        if ((wifiStaConnected == false) || (telnetEnable == false))
+        {
+            // Stop the telnet server
+            end();
+            _state = TELNET_STATE_WAIT_FOR_NETWORK;
+        }
+        else
+        {
+            // Check if there are any new clients
+            if (_server && _server->hasClient())
+                newClient();
+
+            // Check clients for data
+            for (i = 0; i < _maxClients; i++)
+            {
+                client = _clients[i];
+                if (client)
+                {
+                    // Process any incoming data, return the connection status
+                    if (!client->processInput())
+
+                        // Broken connection, free this slot
+                        closeClient(i);
+                }
             }
         }
-    }
-
-    // The network connection is broken
-    else if (_activeClients)
-    {
-        // Disconnect all of the client connections
-        for (i = 0; i < _maxClients; i++)
-        {
-            client = _clients[i];
-            if (client)
-            {
-                // Disconnected client, free this slot
-                client->disconnect();
-                closeClient(i);
-            }
-        }
+        break;
     }
 }
 

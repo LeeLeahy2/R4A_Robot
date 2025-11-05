@@ -37,12 +37,14 @@ void serverInfo24(const R4A_MENU_ENTRY * menuEntry, const char * command, Print 
 R4A_TELNET_SERVER telnet23(4,
                            r4aTelnetContextProcessInput,
                            contextCreate23,
-                           r4aTelnetContextDelete);
+                           r4aTelnetContextDelete,
+                           23);
 R4A_TELNET_SERVER telnet24(4,
                            r4aTelnetContextProcessInput,
                            contextCreate24,
-                           r4aTelnetContextDelete);
-R4A_TELNET_SERVER telnet25(4, serialOutput, nullptr, nullptr);
+                           r4aTelnetContextDelete,
+                           24);
+R4A_TELNET_SERVER telnet25(4, serialOutput, nullptr, nullptr, 25);
 
 //****************************************
 // Menus
@@ -131,12 +133,6 @@ void setup()
     // Initialize the menu
     r4aMenuBegin(&serialMenu, menuTable24, menuTable24Entries);
 
-/*
-    // Start the WiFi network
-    Serial.println("Connecting to WiFi");
-    WiFi.begin(wifiSSID, wifiPassword);
-*/
-
     // Scan WiFi for possible remote APs
     Serial.println("Scanning WiFi ");
     wifiMulti.addAP(wifiSSID1, wifiPassword1);
@@ -162,9 +158,9 @@ void setup()
     }
 
     // Start the telnet server
-    telnet23.begin(WiFi.STA.localIP(), 23);
-    telnet24.begin(WiFi.STA.localIP(), 24);
-    telnet25.begin(WiFi.STA.localIP(), 25);
+    telnet23.begin(WiFi.STA.localIP());
+    telnet24.begin(WiFi.STA.localIP());
+    telnet25.begin(WiFi.STA.localIP());
 }
 
 //*********************************************************************
@@ -176,10 +172,6 @@ void loop()
     static bool previousConnected25;
     bool wifiConnected;
 
-/*
-    // Determine if WiFi is connected
-    wifiConnected = (WiFi.status() == WL_CONNECTED);
-*/
     // Update the telnet server state
     wifiConnected = (wifiMulti.run() == WL_CONNECTED);
 
@@ -187,7 +179,7 @@ void loop()
     r4aNtpUpdate(wifiConnected);
 
     // Update the telnet server state
-    telnet23.update(wifiConnected);
+    telnet23.update(true, wifiConnected);
     if (previousConnected23 != wifiConnected)
     {
         previousConnected23 = wifiConnected;
@@ -198,7 +190,7 @@ void loop()
     }
 
     // Update the telnet server state
-    telnet24.update(wifiConnected);
+    telnet24.update(true, wifiConnected);
     if (previousConnected24 != wifiConnected)
     {
         previousConnected24 = wifiConnected;
@@ -209,7 +201,7 @@ void loop()
     }
 
     // Update the telnet server state
-    telnet25.update(wifiConnected);
+    telnet25.update(true, wifiConnected);
     if (previousConnected25 != wifiConnected)
     {
         previousConnected25 = wifiConnected;

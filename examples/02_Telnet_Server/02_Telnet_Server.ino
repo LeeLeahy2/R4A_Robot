@@ -9,7 +9,6 @@
 
 #include "secrets.h"
 
-#define TELNET_PORT             23
 #define MAX_TELNET_CLIENTS      4
 
 WiFiMulti wifiMulti;
@@ -99,18 +98,18 @@ void setup()
     }
 
     // Start the telnet server
-    telnet.begin(WiFi.STA.localIP(), TELNET_PORT);
+    telnet.begin(WiFi.STA.localIP());
 
     // Display the IP address
     Serial.println("");
-    Serial.printf("WiFi: %s:%d\r\n", WiFi.localIP().toString().c_str(), TELNET_PORT);
+    Serial.printf("WiFi: %s:%d\r\n", WiFi.localIP().toString().c_str(), telnet.port());
 }
 
 //*********************************************************************
 // Idle loop for the application
 void loop()
 {
-    telnet.update(wifiMulti.run() == WL_CONNECTED);
+    telnet.update(true, wifiMulti.run() == WL_CONNECTED);
 }
 
 //*********************************************************************

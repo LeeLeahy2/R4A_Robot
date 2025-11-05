@@ -1733,6 +1733,16 @@ bool r4aTelnetContextProcessInput(void * contextData,
 // Telnet Server API
 //****************************************
 
+#define R4A_TELNET_PORT         23
+
+enum TELNET_STATE_t
+{
+    TELNET_STATE_OFF = 0,
+    TELNET_STATE_WAIT_FOR_NETWORK,
+    TELNET_STATE_RUNNING,
+    TELNET_STATE_LOST_NETWORK,
+};
+
 class R4A_TELNET_SERVER : public Print
 {
   private:
@@ -1743,9 +1753,10 @@ class R4A_TELNET_SERVER : public Print
     R4A_TELNET_CONTEXT_DELETE _contextDelete;
     IPAddress _ipAddress;
     const int _maxClients;
-    uint16_t _port;
+    const uint16_t _port;
     R4A_TELNET_CLIENT_PROCESS_INPUT _processInput;
     NetworkServer * _server;
+    TELNET_STATE_t _state;
 
     // Close the client specified by index i
     // Inputs:
@@ -1764,10 +1775,12 @@ class R4A_TELNET_SERVER : public Print
     //   processInput: Address of a function to process input characters
     //   contextCreate: Address of a function to create the telnet context
     //   contextDelete: Address of a function to delete the telnet context
+    //   port: Port number for the telnet connection
     R4A_TELNET_SERVER(uint16_t maxClients,
                       R4A_TELNET_CLIENT_PROCESS_INPUT processInput,
                       R4A_TELNET_CONTEXT_CREATE contextCreate = nullptr,
-                      R4A_TELNET_CONTEXT_DELETE contextDelete = nullptr);
+                      R4A_TELNET_CONTEXT_DELETE contextDelete = nullptr,
+                      uint16_t port = R4A_TELNET_PORT);
 
     // Destructor: Cleanup the things allocated in the constructor
     ~R4A_TELNET_SERVER();
@@ -1775,11 +1788,10 @@ class R4A_TELNET_SERVER : public Print
     // Initialize the telnet server
     // Inputs:
     //   ipAddress: IP Address of the server
-    //   port: The port on the server used for telnet client connections
     // Outputs:
     //   Returns true following successful server initialization and false
     //   upon failure.
-    bool begin(IPAddress ipAddress, uint16_t port);
+    bool begin(IPAddress ipAddress);
 
     // Restore state to just after constructor execution
     void end();
@@ -1807,9 +1819,10 @@ class R4A_TELNET_SERVER : public Print
 
     // Update the server state
     // Inputs:
-    //   connected: True when the network is connected and false upon
-    //              network failure
-    void update(bool connected);
+    //   telnetEnable: True when telnet is enabled and false when disabled
+    //   wifiStaConnected: True when the network is connected and false
+    //                     upon network failure
+    void update(bool telnetEnable, bool wifiStaConnected);
 
     // Write to all clients
     // Inputs:
