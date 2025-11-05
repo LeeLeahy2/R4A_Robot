@@ -8,6 +8,10 @@
 #include "R4A_Robot.h"
 
 //****************************************
+// Constants
+//****************************************
+
+//****************************************
 // Globals
 //****************************************
 
@@ -17,6 +21,7 @@ R4A_SPI_FLASH_COMMAND r4aSpiFlashClientCmd;
 size_t r4aSpiFlashClientBytesProcessed;
 size_t r4aSpiFlashClientBytesValid;
 NetworkServer * r4aSpiFlashServer;
+uint8_t r4aSpiFlashServerState;
 
 //*********************************************************************
 // Close the client
@@ -234,7 +239,7 @@ bool r4aSpiFlashClientProcessInput()
 // Initialize the SPI NOR Flash server
 // Returns true following successful server initialization and false
 // upon failure.
-bool r4aSpiFlashServerBegin(IPAddress ipAddress, uint16_t port)
+bool r4aSpiFlashServerBegin(IPAddress ipAddress)
 {
     size_t length;
 
@@ -242,7 +247,7 @@ bool r4aSpiFlashServerBegin(IPAddress ipAddress, uint16_t port)
     do
     {
         // Allocate the network object
-        r4aSpiFlashServer = new NetworkServer(ipAddress, port);
+        r4aSpiFlashServer = new NetworkServer(ipAddress, r4aSpiFlashServerPort);
         if (!r4aSpiFlashServer)
         {
             Serial.printf("ERROR: Failed to allocate NetworkServer object!\r\n");
@@ -250,7 +255,7 @@ bool r4aSpiFlashServerBegin(IPAddress ipAddress, uint16_t port)
         }
 
         // Initialize the network server object
-        r4aSpiFlashServer->begin(port);
+        r4aSpiFlashServer->begin(r4aSpiFlashServerPort);
         r4aSpiFlashServer->setNoDelay(true);
         break;
     } while (0);
@@ -275,30 +280,70 @@ void r4aSpiFlashServerEnd()
     }
 }
 
+enum R4A_SPI_FLASH_SERVER_STATE_t
+{
+    SPI_FLASH_SERVER_STATE_OFF = 0,
+    SPI_FLASH_SERVER_STATE_WAIT_FOR_NETWORK,
+    SPI_FLASH_SERVER_STATE_RUNNING,
+};
+
 //*********************************************************************
 // Update the server state
-void r4aSpiFlashServerUpdate(bool connected)
+void r4aSpiFlashServerUpdate(bool spiFlashServerEnable, bool wifiStaConnected)
 {
-    // Determine if the network is still working
-    if (connected)
+    switch (r4aSpiFlashServerState)
     {
-        // Check if there are any new clients
-        if (r4aSpiFlashServer && (r4aSpiFlashClientConnected() == false))
-            r4aSpiFlashClientNew();
+    case SPI_FLASH_SERVER_STATE_OFF:
+        // Determine if the SPI Flash server is starting
+        if (spiFlashServerEnable)
+            r4aSpiFlashServerState = SPI_FLASH_SERVER_STATE_WAIT_FOR_NETWORK;
+        break;
 
-        // Check client for data
-        if (r4aSpiFlashClient)
+    case SPI_FLASH_SERVER_STATE_WAIT_FOR_NETWORK:
+        // Determine if the SPI Flash server is being shutdown
+        if (spiFlashServerEnable == false)
+            r4aSpiFlashServerState = SPI_FLASH_SERVER_STATE_OFF;
+
+        // Determine if the network is connected
+        else if (wifiStaConnected)
         {
-            // Process any incoming data, return the connection status
-            if (r4aSpiFlashClientProcessInput() == false)
-
-                // Broken connection, free this slot
-                r4aSpiFlashClientClose();
+            // Initialize the SPI Flash server
+            Serial.printf("SPI Flash Server: %s:%d\r\n", WiFi.localIP().toString().c_str(),
+                          r4aSpiFlashServerPort);
+            r4aSpiFlashServerBegin(WiFi.STA.localIP());
+            r4aSpiFlashServerState = SPI_FLASH_SERVER_STATE_RUNNING;
         }
-    }
+        break;
 
-    // The network connection is broken
-    else if (r4aSpiFlashClient)
-        // Disconnected client, free this slot
-        r4aSpiFlashClientClose();
+    case SPI_FLASH_SERVER_STATE_RUNNING:
+        // Determine if the network failed or if the server is shutdown
+        if ((wifiStaConnected == false) || (spiFlashServerEnable == false))
+        {
+            // The network connection is broken
+            if (r4aSpiFlashClient)
+                // Disconnected client, free this slot
+                r4aSpiFlashClientClose();
+
+            // Stop the SPI Flash server
+            r4aSpiFlashServerEnd();
+            r4aSpiFlashServerState = SPI_FLASH_SERVER_STATE_WAIT_FOR_NETWORK;
+        }
+        else
+        {
+            // Check if there are any new clients
+            if (r4aSpiFlashServer && (r4aSpiFlashClientConnected() == false))
+                r4aSpiFlashClientNew();
+
+            // Check client for data
+            if (r4aSpiFlashClient)
+            {
+                // Process any incoming data, return the connection status
+                if (r4aSpiFlashClientProcessInput() == false)
+
+                    // Broken connection, free this slot
+                    r4aSpiFlashClientClose();
+            }
+        }
+        break;
+    }
 }

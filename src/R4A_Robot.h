@@ -1513,20 +1513,23 @@ typedef struct _R4A_SPI_FLASH_COMMAND
 // Initialize the SPI NOR Flash server
 // Inputs:
 //   ipAddress: IP address of the server
-//   port: Server port number
 // Outputs:
 //   Returns true following successful server initialization and false
 //   upon failure.
-bool r4aSpiFlashServerBegin(IPAddress ipAddress, uint16_t port);
+bool r4aSpiFlashServerBegin(IPAddress ipAddress);
 
 // Done with the SPI NOR Flash server
 void r4aSpiFlashServerEnd();
 
 // Update the server state
 // Inputs:
-//   connected: Set to true when connected to the network and false when
+//   spiFlashServerEnable: Set to true to enable the server and false to stop
+//                         the server
+//   wifiStaConnected: Set to true when connected to the network and false when
 //   not connected
-void r4aSpiFlashServerUpdate(bool connected);
+void r4aSpiFlashServerUpdate(bool spiFlashServerEnable, bool wifiStaConnected);
+
+extern uint16_t r4aSpiFlashServerPort;  // Port for SPI Flash server connections
 
 //****************************************
 // Support API
