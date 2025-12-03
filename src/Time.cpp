@@ -98,6 +98,14 @@ void r4aTimeDisplayLoopTimes(Print * display,
     char timeMin[32];
     char timeStdDev[32];
 
+    // Check for no entries
+    if (entries == 0)
+    {
+        display->printf("                                                    %6ld  %s\r\n",
+                        entries, text);
+        return;
+    }
+
     // Get the loop times
     averageUsec = r4aTimeComputeAverageUsec(list, entries, &maximumUsec, &minimumUsec);
     stdDevUsec = r4aTimeComputeStdDevUsec(list, entries, averageUsec);
